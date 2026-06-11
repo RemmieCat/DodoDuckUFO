@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Abducktion — 6 goals</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="modal.css" />
+</head>
+<body>
+
+<!-- ══ SPLASH ══════════════════════════════════════════ -->
+<div id="page-splash" class="page active">
+  <h1 class="splash-title">Abducktion</h1>
+  <div class="splash-ufo">UFO animation placeholder</div>
+  <button class="btn-primary" id="btn-start">Start Game</button>
+</div>
+
+<!-- ══ GAME ════════════════════════════════════════════ -->
+<div id="page-game" class="page">
+
+  <div class="game-layout">
+
+    <!-- Staging -->
+    <div class="staging-area">
+      <div class="area-label">Staging</div>
+    </div>
+
+    <!-- Goals -->
+    <div class="goal-area">
+      <div class="area-label">Goals</div>
+      <div class="goal-cards-row" id="goal-cards-row"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-area" id="action-area">
+      <div class="area-label">Actions</div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-area">
+      <div class="board-grid" id="board-grid"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ══ GOAL MODAL ══════════════════════════════════════ -->
+<div id="goal-modal" class="goal-modal-backdrop">
+  <div class="goal-modal-card">
+    <button class="goal-modal-close" id="goal-modal-close">&#x2715;</button>
+    <div class="goal-modal-name"  id="goal-modal-name"></div>
+    <div class="goal-modal-pts"   id="goal-modal-pts"></div>
+    <div class="goal-modal-pattern" id="goal-modal-pattern"></div>
+    <div class="goal-modal-desc"  id="goal-modal-desc"></div>
+  </div>
+</div>
+
+<!-- ══ RESULTS ═════════════════════════════════════════ -->
+<div id="page-results" class="page">
+  <h2 class="results-title">Game Over</h2>
+  <div class="results-score">142 pts</div>
+
+  <div class="results-stats">
+    <div class="stat-card">
+      <div class="stat-value">6</div>
+      <div class="stat-label">Goals matched</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">21</div>
+      <div class="stat-label">Actions used</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">4</div>
+      <div class="stat-label">Rounds</div>
+    </div>
+  </div>
+
+  <ol class="high-scores">
+    <li>182 pts</li>
+    <li>142 pts — today</li>
+    <li>117 pts</li>
+    <li>98 pts</li>
+    <li>74 pts</li>
+  </ol>
+
+  <button class="btn-primary" id="btn-play-again">Play Again</button>
+</div>
+
+<script src="script.js"></script>
+<script>
+  // ── Page navigation ──────────────────────────────────
+  function showPage(id) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  document.getElementById("btn-start").addEventListener("click", () => showPage("page-game"));
+  document.getElementById("btn-play-again").addEventListener("click", () => showPage("page-splash"));
+
+  // temp: click board area to go to results for layout testing
+  document.getElementById("board-grid").addEventListener("dblclick", () => showPage("page-results"));
+
+  // ── Goal cards (6 dummies) ───────────────────────────
+  const DUMMY_GOALS = [
+    { name: "Duckfoot",     points: 4,  pattern: "-A-AAA", cols: 3, description: "Three ducks in any color combination on the top row exactly match the three ducks directly below." },
+    { name: "Flying V",     points: 50, pattern: "-A-A-A", cols: 3, description: "Two ducks of the same color form a V shape across both rows." },
+    { name: "Hatchlings",   points: 6,  pattern: "AAABBB", cols: 3, description: "Three ducks of one color sit beside three ducks of another color." },
+    { name: "Pairbond",     points: 2,  pattern: "ABAB",   cols: 2, description: "Two pairs of differently colored ducks alternate in a 2x2 block." },
+    { name: "Alligator",    points: 9,  pattern: "----AAAAA-", cols: 5, description: "Five ducks of the same color fill the middle of the board with exactly one empty cell on each end." },
+    { name: "Mating Dance", points: 2,  pattern: "AABB",   cols: 4, description: "Two ducks of one color are immediately followed by two ducks of another color in the same row." },
+  ];
+
+  renderGoalCards(DUMMY_GOALS, "goal-cards-row");
+
+  // ── Board drop cells (10 = 2 rows × 5) ──────────────
+  const boardGrid = document.getElementById("board-grid");
+  for (let i = 1; i <= 10; i++) {
+    const cell = document.createElement("div");
+    cell.className = "drop-cell";
+    cell.id = "drop" + i;
+    boardGrid.appendChild(cell);
+  }
+
+  // ── Action cards (12 dummies) ────────────────────────
+  const ACTION_NAMES = [
+    "Teleport", "Swap", "Gravity Assist", "Abducktion", "Dubabducktion",
+    "Black Hole", "Parallel Universe", "Shape Shifter", "Orbit",
+    "Wormhole", "Body Snatcher", "Mass Abducktion"
+  ];
+
+  const actionArea = document.getElementById("action-area");
+  ACTION_NAMES.forEach(name => {
+    const card = document.createElement("div");
+    card.className = "action-card";
+
+    const label = document.createElement("span");
+    label.textContent = name;
+
+    const badge = document.createElement("span");
+    badge.className = "action-count";
+    badge.textContent = "5";
+
+    card.appendChild(label);
+    card.appendChild(badge);
+    actionArea.appendChild(card);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+/* ── Goal card modal ─────────────────────────────────────
+   The backdrop covers the entire viewport and blocks all
+   interaction beneath it. The card sits centered on top.   */
+
+.goal-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.goal-modal-backdrop.open {
+  display: flex;
+}
+
+.goal-modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  padding: 28px 28px 24px;
+  width: min(340px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: modal-in 0.18s ease;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.93); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+.goal-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
+}
+.goal-modal-close:hover { background: #e2e8f0; }
+
+.goal-modal-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  padding-right: 32px; /* clear the X button */
+}
+
+.goal-modal-pts {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: -8px;
+}
+
+/* Pattern grid — aspect-ratio set inline per goal so cells are always square */
+.goal-modal-pattern {
+  display: grid;
+  gap: 6px;
+  width: min(180px, 60%);
+  align-self: center;
+  /* aspect-ratio set inline; height follows automatically */
+}
+
+.goal-modal-pattern .pattern-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: #93c5fd;
+}
+.goal-modal-pattern .pattern-cell.empty {
+  background: transparent;
+  border: 1.5px dashed #cbd5e1;
+}
+
+.goal-modal-desc {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+/* Compact slightly on small phones */
+@media (max-width: 380px) {
+  .goal-modal-card {
+    padding: 20px 18px;
+    gap: 10px;
+  }
+  .goal-modal-name { font-size: 1.1rem; }
+  .goal-modal-pattern {
+    width: min(140px, 55%);
+  }
+}

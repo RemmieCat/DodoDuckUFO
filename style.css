@@ -1,0 +1,644 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --border: #d0d7de;
+  --accent: #2563eb;
+  --text: #1e293b;
+  --muted: #64748b;
+  --radius: 12px;
+  --gap: clamp(4px, 1vw, 10px);
+  --left-col: clamp(110px, 16vw, 175px);
+  --right-col: clamp(150px, 19vw, 210px);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ── Pages ──────────────────────────────────────────── */
+.page {
+  display: none;
+  width: 100%;
+  height: 100dvh;
+}
+.page.active { display: flex; }
+
+/* ── Splash ─────────────────────────────────────────── */
+#page-splash {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  background: linear-gradient(135deg, #0f172a 0%, #1a3a5c 100%);
+  color: #fff;
+}
+
+.splash-title {
+  font-size: clamp(2.5rem, 9vw, 6rem);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.splash-ufo {
+  width: clamp(120px, 22vw, 220px);
+  height: clamp(80px, 15vw, 150px);
+  background: #1e293b;
+  border: 2px dashed #334;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 12px;
+}
+
+/* ── Shared button ───────────────────────────────────── */
+.btn-primary {
+  padding: 14px 40px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.btn-primary:hover  { background: #1d4ed8; }
+.btn-primary:active { transform: scale(0.97); }
+
+.area-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Game screen ─────────────────────────────────────── */
+#page-game {
+  flex-direction: column;
+  padding: var(--gap);
+  gap: var(--gap);
+  overflow: hidden;
+}
+
+.game-layout {
+  display: grid;
+  grid-template-areas:
+    "staging goals   actions"
+    "board   board   actions";
+  grid-template-columns: var(--left-col) 1fr var(--right-col);
+  grid-template-rows: auto 1fr;
+  gap: var(--gap);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── Staging ─────────────────────────────────────────── */
+.staging-area {
+  grid-area: staging;
+  background: var(--surface);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+/* ── Goal area ───────────────────────────────────────── */
+.goal-area {
+  grid-area: goals;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.goal-cards-row {
+  display: flex;
+  gap: var(--gap);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.goal-card {
+  flex: 1;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.goal-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+.goal-card-name {
+  font-size: clamp(9px, 1.2vw, 12px);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.goal-card-points {
+  font-size: clamp(9px, 1vw, 11px);
+  color: var(--muted);
+}
+/* Frame is a container so cqw/cqh resolve against it */
+.goal-card-pattern-frame {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  container-type: size;
+}
+
+/* Pick whichever dimension is tighter.
+   When height-constrained, the exact width that produces square cells is:
+     (cqh - (rows-1)*gap) * cols/rows  +  (cols-1)*gap
+   We subtract 2px as a rounding buffer so nothing clips. */
+.goal-card-pattern {
+  --gap: 2px;
+  display: grid;
+  gap: var(--gap);
+  width: min(
+    100cqw,
+    calc(
+      (100cqh - (var(--rows) - 1) * var(--gap)) * var(--cols) / var(--rows)
+      + (var(--cols) - 1) * var(--gap)
+      - 2px
+    )
+  );
+}
+
+.pattern-cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: #93c5fd;
+}
+.pattern-cell.empty {
+  background: transparent;
+  border: 1px dashed #cbd5e1;
+}
+
+/* ── Action area ─────────────────────────────────────── */
+.action-area {
+  grid-area: actions;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(5px, 0.8vh, 8px) 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: clamp(10px, 1.1vw, 13px);
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+.action-card:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.action-count {
+  background: #e2e8f0;
+  color: var(--muted);
+  border-radius: 999px;
+  font-size: clamp(8px, 1vw, 11px);
+  font-weight: 700;
+  padding: 1px 5px;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+/* ── Action detail (expanded, replaces action list) ─── */
+.action-detail {
+  grid-area: actions;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  /* Two-column: graphic left, everything else right */
+  display: grid;
+  grid-template-areas:
+    "back  back"
+    "graphic info";
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 8px 12px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.action-detail[hidden] { display: none; }
+
+.action-detail-back {
+  grid-area: back;
+  justify-self: start;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.action-detail-back:hover { text-decoration: underline; }
+
+.action-detail-graphic {
+  grid-area: graphic;
+  width: clamp(80px, 12vw, 140px);
+  aspect-ratio: 1;
+  background: #f1f5f9;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--muted);
+  align-self: start;
+}
+
+/* Right column: name, desc, controls stacked */
+.action-detail-info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.action-detail-name {
+  font-size: clamp(13px, 1.4vw, 16px);
+  font-weight: 800;
+  color: var(--text);
+}
+
+.action-detail-desc {
+  font-size: clamp(11px, 1.1vw, 13px);
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.action-detail-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.action-controls-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.action-step-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+/* Wormhole color swatches */
+.action-color-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 2px 0;
+}
+
+.action-color-swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  flex-shrink: 0;
+}
+.action-color-swatch:hover {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.15);
+}
+
+/* Mass Abducktion picker */
+.mass-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.mass-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 3px 0;
+}
+
+.mass-picker-label {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.mass-picker-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mass-stepper {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #f1f5f9;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.1s;
+}
+.mass-stepper:hover:not(:disabled) { background: #e2e8f0; }
+.mass-stepper:disabled { opacity: 0.38; cursor: not-allowed; }
+
+.mass-stepper-qty {
+  min-width: 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Shared action buttons */
+.action-btn {
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  font-size: clamp(12px, 1.2vw, 14px);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.08s;
+}
+.action-btn:active { transform: scale(0.97); }
+.action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.action-btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.action-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+
+.action-btn-secondary {
+  background: #7c3aed;
+  color: #fff;
+}
+.action-btn-secondary:hover:not(:disabled) { background: #6d28d9; }
+
+/* ── Board area ──────────────────────────────────────── */
+.board-area {
+  grid-area: board;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(4px, 0.8vw, 10px);
+  width: 100%;
+  max-width: min(580px, 100%);
+  /* In landscape the row can be taller than the grid needs — don't let cells exceed
+     half the board-area height (2 rows of square cells + gap) */
+  max-height: calc(100% - 24px);
+}
+
+.drop-cell {
+  aspect-ratio: 1;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* ── Results ─────────────────────────────────────────── */
+#page-results {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px;
+}
+
+.results-title {
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 800;
+  margin: 0;
+}
+.results-score {
+  font-size: clamp(2rem, 7vw, 4rem);
+  font-weight: 900;
+  color: var(--accent);
+}
+.results-stats {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  text-align: center;
+  min-width: 90px;
+}
+.stat-value { font-size: 1.4rem; font-weight: 800; }
+.stat-label { font-size: 11px; color: var(--muted); }
+
+.high-scores {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.high-scores li { font-size: 13px; }
+
+/* ── Portrait ────────────────────────────────────────── */
+@media (orientation: portrait) {
+  .game-layout {
+    grid-template-areas:
+      "staging goals"
+      "board   board"
+      "actions actions";
+    grid-template-columns: clamp(90px, 28vw, 140px) 1fr;
+    /* top row sizes to tallest child (goals can grow to 2 rows); board auto; actions fill rest */
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .staging-area {
+    aspect-ratio: 1;
+    width: 100%;
+  }
+
+  /* Allow goal area to grow tall enough for 2 rows of cards */
+  .goal-area {
+    overflow: visible;
+    min-height: 0;
+  }
+
+  /* Switch to a 3-column grid so cards wrap to a second row naturally */
+  .goal-cards-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: auto;
+    gap: var(--gap);
+    flex: none;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  /* Square-ish cards — tall enough for name, pts, and a visible pattern grid */
+  .goal-card {
+    aspect-ratio: 9 / 10;
+    min-width: 0;
+  }
+
+  .board-area {
+    align-items: center;
+    padding: 6px;
+  }
+
+  .board-grid {
+    width: 100%;
+    max-width: 100%;
+    max-height: none;
+  }
+
+  /* Actions: scrollable wrap grid filling the bottom zone */
+  .action-area {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    overflow-y: auto;
+    gap: 3px;
+  }
+
+  .action-card {
+    flex: 0 1 calc(25% - 3px);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    font-size: clamp(8px, 2vw, 11px);
+    padding: 5px 6px;
+  }
+
+  .action-count {
+    margin-left: 0;
+  }
+}
+
+/* Action detail in portrait — collapse to single column */
+@media (orientation: portrait) {
+  .action-detail {
+    grid-template-areas:
+      "back"
+      "graphic"
+      "info";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .action-detail-graphic {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+  }
+
+  .action-btn { width: auto; flex: 1; min-width: 100px; }
+  .action-detail-controls { flex-direction: row; flex-wrap: wrap; }
+}
+
+/* 6" phone portrait narrow: 3-up instead of 4-up */
+@media (max-width: 400px) and (orientation: portrait) {
+  .action-card {
+    flex: 0 1 calc(33.33% - 3px);
+  }
+}
+
+/* 6" phone landscape */
+@media (max-height: 420px) and (orientation: landscape) {
+  :root { --left-col: clamp(100px, 15vw, 140px); }
+
+  .action-card {
+    padding: 3px 6px;
+    font-size: 9px;
+  }
+}

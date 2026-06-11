@@ -1,0 +1,11 @@
+{
+  "name": "Abducktion",
+  "short_name": "Abducktion",
+  "description": "Duck placement board game",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "icons": []
+}
