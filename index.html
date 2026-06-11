@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Abducktion — 6 goals</title>
+  <title>Abducktion</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="Abducktion" />
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="modal.css" />
 </head>
@@ -32,9 +37,20 @@
       <div class="goal-cards-row" id="goal-cards-row"></div>
     </div>
 
-    <!-- Actions -->
+    <!-- Actions list -->
     <div class="action-area" id="action-area">
       <div class="area-label">Actions</div>
+    </div>
+
+    <!-- Active action expanded view (replaces action-area when an action is selected) -->
+    <div class="action-detail" id="action-detail" hidden>
+      <button class="action-detail-back" id="action-detail-back">&#x2190; Cancel</button>
+      <div class="action-detail-graphic" id="action-detail-graphic"></div>
+      <div class="action-detail-info">
+        <div class="action-detail-name" id="action-detail-name"></div>
+        <div class="action-detail-desc" id="action-detail-desc"></div>
+        <div class="action-detail-controls" id="action-detail-controls"></div>
+      </div>
     </div>
 
     <!-- Board -->
@@ -90,6 +106,11 @@
 
 <script src="script.js"></script>
 <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
+<script>
   // ── Page navigation ──────────────────────────────────
   function showPage(id) {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
@@ -102,14 +123,11 @@
   // temp: click board area to go to results for layout testing
   document.getElementById("board-grid").addEventListener("dblclick", () => showPage("page-results"));
 
-  // ── Goal cards (6 dummies) ───────────────────────────
+  // ── Goal cards (3 dummies) ───────────────────────────
   const DUMMY_GOALS = [
-    { name: "Duckfoot",     points: 4,  pattern: "-A-AAA", cols: 3, description: "Three ducks in any color combination on the top row exactly match the three ducks directly below." },
-    { name: "Flying V",     points: 50, pattern: "-A-A-A", cols: 3, description: "Two ducks of the same color form a V shape across both rows." },
-    { name: "Hatchlings",   points: 6,  pattern: "AAABBB", cols: 3, description: "Three ducks of one color sit beside three ducks of another color." },
-    { name: "Pairbond",     points: 2,  pattern: "ABAB",   cols: 2, description: "Two pairs of differently colored ducks alternate in a 2x2 block." },
-    { name: "Alligator",    points: 9,  pattern: "----AAAAA-", cols: 5, description: "Five ducks of the same color fill the middle of the board with exactly one empty cell on each end." },
-    { name: "Mating Dance", points: 2,  pattern: "AABB",   cols: 4, description: "Two ducks of one color are immediately followed by two ducks of another color in the same row." },
+    { name: "Duckfoot",   points: 4,  pattern: "-A-AAA", cols: 3, description: "Three ducks in any color combination on the top row exactly match the three ducks directly below." },
+    { name: "Flying V",   points: 50, pattern: "-A-A-A", cols: 3, description: "Two ducks of the same color form a V shape across both rows." },
+    { name: "Hatchlings", points: 6,  pattern: "AAABBB", cols: 3, description: "Three ducks of one color sit beside three ducks of another color." },
   ];
 
   renderGoalCards(DUMMY_GOALS, "goal-cards-row");
@@ -123,29 +141,7 @@
     boardGrid.appendChild(cell);
   }
 
-  // ── Action cards (12 dummies) ────────────────────────
-  const ACTION_NAMES = [
-    "Teleport", "Swap", "Gravity Assist", "Abducktion", "Dubabducktion",
-    "Black Hole", "Parallel Universe", "Shape Shifter", "Orbit",
-    "Wormhole", "Body Snatcher", "Mass Abducktion"
-  ];
-
-  const actionArea = document.getElementById("action-area");
-  ACTION_NAMES.forEach(name => {
-    const card = document.createElement("div");
-    card.className = "action-card";
-
-    const label = document.createElement("span");
-    label.textContent = name;
-
-    const badge = document.createElement("span");
-    badge.className = "action-count";
-    badge.textContent = "5";
-
-    card.appendChild(label);
-    card.appendChild(badge);
-    actionArea.appendChild(card);
-  });
+  renderActionList();
 </script>
 </body>
 </html>
