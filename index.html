@@ -4,20 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Abducktion</title>
-  <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
   <meta name="theme-color" content="#000000" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <meta name="apple-mobile-web-app-title" content="Abducktion" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="modal.css" />
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./modal.css" />
 </head>
 <body>
 
 <!-- ══ SPLASH ══════════════════════════════════════════ -->
 <div id="page-splash" class="page active">
   <h1 class="splash-title">Abducktion</h1>
-  <div class="splash-ufo">UFO animation placeholder</div>
+  <div class="splash-scene" aria-hidden="true">
+    <div class="splash-ufo-group">
+      <img class="splash-ufo-img" src="images/transparent/ufo.png" alt="">
+      <div class="splash-beam"></div>
+    </div>
+    <div class="splash-duck-wrap">
+      <img class="splash-duck" src="images/mallard.png" alt="">
+    </div>
+  </div>
   <button class="btn-primary" id="btn-start">Start Game</button>
 </div>
 
@@ -26,10 +35,8 @@
 
   <div class="game-layout">
 
-    <!-- Staging -->
-    <div class="staging-area">
-      <div class="area-label">Staging</div>
-    </div>
+    <!-- Staging — label hidden; UFO image is the visual for this area -->
+    <div class="staging-area" id="staging-area"></div>
 
     <!-- Goals -->
     <div class="goal-area">
@@ -73,75 +80,41 @@
   </div>
 </div>
 
+<!-- ══ PROGRESS MODAL ══════════════════════════════════ -->
+<div id="progress-modal" class="goal-modal-backdrop">
+  <div class="progress-modal-card">
+    <button class="goal-modal-close" id="progress-modal-close">&#x2715;</button>
+    <div class="progress-modal-score" id="progress-modal-score">0 pts</div>
+    <div class="progress-modal-body">
+      <ol class="progress-goal-list" id="progress-goal-list"></ol>
+      <div class="progress-visual" id="progress-visual">
+        <img class="progress-ufo-img" src="images/transparent/ufo.png" alt="UFO">
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ RESULTS ═════════════════════════════════════════ -->
 <div id="page-results" class="page">
   <h2 class="results-title">Game Over</h2>
-  <div class="results-score">142 pts</div>
+  <div class="results-score" id="results-score">0 pts</div>
 
   <div class="results-stats">
     <div class="stat-card">
-      <div class="stat-value">6</div>
+      <div class="stat-value" id="results-goals">0</div>
       <div class="stat-label">Goals matched</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value">21</div>
+      <div class="stat-value" id="results-actions">0</div>
       <div class="stat-label">Actions used</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-value">4</div>
-      <div class="stat-label">Rounds</div>
-    </div>
   </div>
-
-  <ol class="high-scores">
-    <li>182 pts</li>
-    <li>142 pts — today</li>
-    <li>117 pts</li>
-    <li>98 pts</li>
-    <li>74 pts</li>
-  </ol>
 
   <button class="btn-primary" id="btn-play-again">Play Again</button>
 </div>
 
-<script src="script.js"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js');
-  }
-</script>
-<script>
-  // ── Page navigation ──────────────────────────────────
-  function showPage(id) {
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    document.getElementById(id).classList.add("active");
-  }
-
-  document.getElementById("btn-start").addEventListener("click", () => showPage("page-game"));
-  document.getElementById("btn-play-again").addEventListener("click", () => showPage("page-splash"));
-
-  // temp: click board area to go to results for layout testing
-  document.getElementById("board-grid").addEventListener("dblclick", () => showPage("page-results"));
-
-  // ── Goal cards (3 dummies) ───────────────────────────
-  const DUMMY_GOALS = [
-    { name: "Duckfoot",   points: 4,  pattern: "-A-AAA", cols: 3, description: "Three ducks in any color combination on the top row exactly match the three ducks directly below." },
-    { name: "Flying V",   points: 50, pattern: "-A-A-A", cols: 3, description: "Two ducks of the same color form a V shape across both rows." },
-    { name: "Hatchlings", points: 6,  pattern: "AAABBB", cols: 3, description: "Three ducks of one color sit beside three ducks of another color." },
-  ];
-
-  renderGoalCards(DUMMY_GOALS, "goal-cards-row");
-
-  // ── Board drop cells (10 = 2 rows × 5) ──────────────
-  const boardGrid = document.getElementById("board-grid");
-  for (let i = 1; i <= 10; i++) {
-    const cell = document.createElement("div");
-    cell.className = "drop-cell";
-    cell.id = "drop" + i;
-    boardGrid.appendChild(cell);
-  }
-
-  renderActionList();
-</script>
+<script src="./script.js"></script>
+<script src="./game.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>

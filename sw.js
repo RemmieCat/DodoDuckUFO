@@ -1,10 +1,19 @@
-const CACHE_NAME = 'abducktion-v1';
+const CACHE_NAME = 'abducktion-v2';
+const BASE = '/DodoDuckUFO';
+
 const ASSETS = [
-  '/index.html',
-  '/style.css',
-  '/modal.css',
-  '/script.js',
-  '/manifest.json'
+  `${BASE}/`,
+  `${BASE}/index.html`,
+  `${BASE}/style.css`,
+  `${BASE}/modal.css`,
+  `${BASE}/script.js`,
+  `${BASE}/game.js`,
+  `${BASE}/app.js`,
+  `${BASE}/manifest.json`,
+  `${BASE}/icon-192.png`,
+  `${BASE}/icon-512.png`,
+  `${BASE}/images/transparent/ufo.png`,
+  `${BASE}/images/mallard.png`,
 ];
 
 self.addEventListener('install', event => {
@@ -24,6 +33,8 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  // Only handle requests within our scope
+  if (!event.request.url.includes(BASE)) return;
   event.respondWith(
     caches.match(event.request).then(cached => cached || fetch(event.request))
   );

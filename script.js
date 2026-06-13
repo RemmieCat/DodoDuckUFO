@@ -16,6 +16,7 @@ function openGoalModal(goal) {
   for (const ch of goal.pattern) {
     const cell = document.createElement("div");
     cell.className = "pattern-cell" + (ch === "-" ? " empty" : "");
+    if (ch !== "-") cell.dataset.letter = ch;
     modalGrid.appendChild(cell);
   }
 
@@ -57,6 +58,7 @@ function buildPatternGrid(pattern, cols) {
   for (const ch of pattern) {
     const cell = document.createElement("div");
     cell.className = "pattern-cell" + (ch === "-" ? " empty" : "");
+    if (ch !== "-") cell.dataset.letter = ch;
     grid.appendChild(cell);
   }
 
@@ -69,74 +71,74 @@ function buildPatternGrid(pattern, cols) {
 const ACTION_DATA = [
   {
     name: "Teleport",
-    count: 5,
+    count: 2,
     description: "Move any board item to any other occupied board space. The displaced item swaps to where you picked up from.",
     controls: "auto",
   },
   {
     name: "Swap",
-    count: 5,
+    count: 2,
     description: "Swap any board item with an adjacent item directly to its left, right, above, or below.",
     controls: "auto",
   },
   {
     name: "Gravity Assist",
-    count: 5,
+    count: 2,
     description: "Make two adjacent swaps in a row. The second swap must involve one of the two items from the first swap.",
     controls: "auto",
   },
   {
     name: "Abducktion",
-    count: 5,
+    count: 2,
     description: "Remove one item from the board. It returns to staging and the board refills.",
     controls: "auto",
   },
   {
     name: "Dubabducktion",
-    count: 5,
+    count: 2,
     description: "Remove two adjacent board items. Click the first, then click a neighbor. Both return to staging and the board refills.",
     controls: "step",
     stepLabel: "Step 1 of 2 — select the first item",
   },
   {
     name: "Black Hole",
-    count: 5,
+    count: 2,
     description: "Remove one board item and every other item on the board that shares its color. All removed items return to staging.",
     controls: "auto",
   },
   {
     name: "Parallel Universe",
-    count: 5,
+    count: 2,
     description: "Swap any item with the one directly above or below it, as many times as you like. Tap End Action when done.",
     controls: "end",
   },
   {
     name: "Shape Shifter",
-    count: 5,
+    count: 2,
     description: "Swap two items in the same row (adjacent or skip one). Those two plus a third neighbor lock in as your set. Rearrange only those three freely, then tap End Action.",
     controls: "end",
   },
   {
     name: "Orbit",
-    count: 5,
+    count: 2,
     description: "Select the upper-left item of any fully occupied 2×2 block, then rotate all four items clockwise as many times as you like. Tap End Action when done.",
     controls: "orbit",
   },
   {
     name: "Wormhole",
-    count: 5,
+    count: 2,
     description: "Select a board item, then choose a new color for it from the palette below.",
     controls: "wormhole",
   },
   {
     name: "Body Snatcher",
-    count: 5,
+    count: 2,
     description: "Click three board items to select them. All three are removed, recolored, then drag each back to any empty space to complete the action.",
     controls: "auto",
   },
   {
     name: "Mass Abducktion",
-    count: 5,
+    alwaysAvailable: true,
     description: "Discard exactly 3 action cards from your hand. Select which cards to discard using the picker below, then confirm to clear the board and refill it.",
     controls: "mass",
   },
@@ -164,12 +166,13 @@ function renderActionList() {
     const label = document.createElement("span");
     label.textContent = action.name;
 
-    const badge = document.createElement("span");
-    badge.className = "action-count";
-    badge.textContent = action.count;
-
     card.appendChild(label);
-    card.appendChild(badge);
+    if (!action.alwaysAvailable) {
+      const badge = document.createElement("span");
+      badge.className = "action-count";
+      badge.textContent = action.count;
+      card.appendChild(badge);
+    }
     card.addEventListener("click", () => openActionDetail(action.name));
     area.appendChild(card);
   });
@@ -211,10 +214,6 @@ function openActionDetail(name) {
       swatch.style.background = color.hex;
       swatch.title = color.name;
       swatch.setAttribute("aria-label", color.name);
-      swatch.addEventListener("click", () => {
-        console.log("Wormhole color chosen:", color.name);
-        closeActionDetail();
-      });
       row.appendChild(swatch);
     });
     controls.appendChild(label);
@@ -239,13 +238,13 @@ function openActionDetail(name) {
     endBtn.className = "action-btn action-btn-primary";
     endBtn.id = "action-end-btn";
     endBtn.textContent = "End Action";
-    endBtn.addEventListener("click", () => { console.log(name, "ended"); closeActionDetail(); });
     controls.appendChild(endBtn);
   }
 }
 
 function buildMassAbductionPicker(container) {
-  // Discard tally: actionName -> qty chosen (0..count)
+  const liveCounts = window.Game?.actionCounts ?? {};
+  // Discard tally: actionName -> qty chosen (0..liveCounts[name])
   const discard = {};
   ACTION_DATA.forEach(a => { discard[a.name] = 0; });
 
@@ -257,6 +256,7 @@ function buildMassAbductionPicker(container) {
 
   const confirmBtn = document.createElement("button");
   confirmBtn.className = "action-btn action-btn-primary";
+  confirmBtn.id = "mass-confirm-btn";
   confirmBtn.disabled = true;
   confirmBtn.textContent = "Discard & Replace Board";
 
@@ -268,11 +268,13 @@ function buildMassAbductionPicker(container) {
     const chosen = totalChosen();
     tallyEl.textContent = `${chosen} / 3 cards selected`;
     confirmBtn.disabled = chosen !== 3;
+    confirmBtn._discardMap = { ...discard };
 
     pickerEl.innerHTML = "";
     ACTION_DATA.forEach(a => {
-      if (a.name === "Mass Abducktion") return; // can't discard itself
-      if (a.count === 0) return;
+      if (a.alwaysAvailable) return; // can't discard always-available cards
+      const liveCount = liveCounts[a.name] ?? 0;
+      if (liveCount === 0) return;
       const qty = discard[a.name];
 
       const row = document.createElement("div");
@@ -280,7 +282,7 @@ function buildMassAbductionPicker(container) {
 
       const rowLabel = document.createElement("span");
       rowLabel.className = "mass-picker-label";
-      rowLabel.textContent = `${a.name} (${a.count})`;
+      rowLabel.textContent = `${a.name} (${liveCount})`;
 
       const controls = document.createElement("div");
       controls.className = "mass-picker-controls";
@@ -301,10 +303,10 @@ function buildMassAbductionPicker(container) {
       const plus = document.createElement("button");
       plus.className = "mass-stepper";
       plus.textContent = "+";
-      plus.disabled = qty >= a.count || chosen >= 3;
+      plus.disabled = qty >= liveCount || chosen >= 3;
       plus.addEventListener("click", () => {
         if (totalChosen() >= 3) return;
-        discard[a.name] = Math.min(a.count, discard[a.name] + 1);
+        discard[a.name] = Math.min(liveCount, discard[a.name] + 1);
         refresh();
       });
 
@@ -316,11 +318,6 @@ function buildMassAbductionPicker(container) {
       pickerEl.appendChild(row);
     });
   }
-
-  confirmBtn.addEventListener("click", () => {
-    console.log("Mass Abducktion confirmed, discarding:", Object.entries(discard).filter(([,v]) => v > 0));
-    closeActionDetail();
-  });
 
   container.appendChild(tallyEl);
   container.appendChild(pickerEl);
@@ -334,28 +331,3 @@ function closeActionDetail() {
   document.getElementById("action-area").hidden   = false;
 }
 
-document.getElementById("action-detail-back").addEventListener("click", closeActionDetail);
-
-// ── Goal cards ────────────────────────────────────────────
-function renderGoalCards(goals, containerId) {
-  const row = document.getElementById(containerId);
-  goals.forEach(goal => {
-    const card = document.createElement("div");
-    card.className = "goal-card";
-
-    const name = document.createElement("div");
-    name.className = "goal-card-name";
-    name.textContent = goal.name;
-
-    const pts = document.createElement("div");
-    pts.className = "goal-card-points";
-    pts.textContent = goal.points + " pts";
-
-    card.appendChild(name);
-    card.appendChild(pts);
-    card.appendChild(buildPatternGrid(goal.pattern, goal.cols));
-
-    card.addEventListener("click", () => openGoalModal(goal));
-    row.appendChild(card);
-  });
-}

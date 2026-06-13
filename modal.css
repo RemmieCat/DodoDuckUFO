@@ -82,7 +82,7 @@
 .goal-modal-pattern .pattern-cell {
   aspect-ratio: 1;
   border-radius: 4px;
-  background: #93c5fd;
+  /* color comes from style.css data-letter rules */
 }
 .goal-modal-pattern .pattern-cell.empty {
   background: transparent;
@@ -93,6 +93,113 @@
   font-size: 0.9rem;
   line-height: 1.55;
   color: var(--text);
+}
+
+/* ── Progress modal ──────────────────────────────────────
+   Wider card with two-column body: goal list + visual     */
+
+.progress-modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  padding: 28px 28px 24px;
+  width: min(560px, 96vw);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: modal-in 0.18s ease;
+}
+
+.progress-modal-score {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--accent);
+  text-align: center;
+  padding-right: 32px;
+}
+
+.progress-modal-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  min-height: 200px;
+}
+
+.progress-goal-list {
+  margin: 0;
+  padding: 0 0 0 4px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  max-height: 280px;
+}
+
+.progress-goal-empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.progress-goal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  transition: background 0.12s;
+}
+.progress-goal-item:hover { background: #f1f5f9; }
+.progress-goal-item.active { background: #eff6ff; outline: 2px solid var(--accent); }
+
+.progress-goal-pts {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+
+.progress-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 160px;
+}
+
+.progress-ufo-img {
+  width: 100%;
+  max-width: 180px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+}
+
+/* Pattern preview inside progress modal —
+   override the goal-card-pattern-frame sizing so it fills the visual panel */
+.progress-pattern-frame.goal-card-pattern-frame {
+  width: 80%;
+  height: 80%;
+  flex: none;
+}
+
+@media (max-width: 480px) {
+  .progress-modal-body {
+    grid-template-columns: 1fr;
+  }
+  .progress-visual { min-height: 120px; }
 }
 
 /* Compact slightly on small phones */
