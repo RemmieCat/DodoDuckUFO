@@ -157,7 +157,7 @@
   transition: background 0.12s;
 }
 .progress-goal-item:hover { background: #f1f5f9; }
-.progress-goal-item.active { background: #eff6ff; outline: 2px solid var(--accent); }
+.progress-goal-item.active { background: #f5f3ff; outline: 2px solid var(--accent); }
 
 .progress-goal-pts {
   font-size: 0.8rem;
@@ -200,6 +200,236 @@
     grid-template-columns: 1fr;
   }
   .progress-visual { min-height: 120px; }
+}
+
+/* ── Settings modal ──────────────────────────────────────── */
+
+.settings-modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+  padding: 28px 28px 24px;
+  width: min(420px, 96vw);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: modal-in 0.18s ease;
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+
+.settings-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0;
+  padding-right: 32px;
+  color: var(--text);
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-radio-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.settings-radio {
+  padding: 5px 14px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: #f8fafc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.settings-radio:hover { border-color: #a78bfa; background: #f5f3ff; }
+.settings-radio.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.settings-field-check {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-check-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings-check-hint {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.settings-check {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.settings-btn-cancel,
+.settings-btn-update {
+  padding: 9px 22px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.settings-btn-cancel {
+  background: #f1f5f9;
+  color: var(--text);
+}
+.settings-btn-cancel:hover { background: #e2e8f0; }
+
+.settings-btn-update {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.settings-btn-update:hover { background: #6d28d9; border-color: #6d28d9; }
+
+/* ── Instructions modal ──────────────────────────────── */
+
+.info-modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+  padding: 28px 28px 24px;
+  width: min(560px, 96vw);
+  max-height: 85dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: modal-in 0.18s ease;
+  overflow: hidden;
+}
+
+.info-modal-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 16px;
+  padding-right: 32px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.info-modal-body {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-right: 4px;
+}
+
+.info-section h3 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin: 0 0 8px;
+}
+
+.info-section p {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.info-section p:last-child { margin-bottom: 0; }
+
+.info-actions {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  font-size: 0.85rem;
+  margin: 0;
+}
+.info-actions dt {
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  padding: 2px 0;
+}
+.info-actions dd {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.5;
+  padding: 2px 0;
+}
+
+.info-ranks {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+.info-ranks td {
+  padding: 4px 12px 4px 0;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+}
+.info-ranks td:first-child {
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 /* Compact slightly on small phones */

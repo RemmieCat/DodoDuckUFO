@@ -16,13 +16,13 @@ const DROP_COORDS = {
   drop7:  { col: 3, row: 1 }, drop6:  { col: 4, row: 1 },
 };
 
-const ITEM_COLORS = ["blue", "yellow", "gray", "pink"];
+const ITEM_COLORS = ["teal", "purple", "gold", "gray"];
 
 const COLOR_HEX = {
-  blue:   "#aed6f1",
-  yellow: "#fef08a",
-  gray:   "#c8c8c8",
-  pink:   "#f5b8cd",
+  teal:   "#b2ece7",
+  purple: "#d4c6fe",
+  gold:   "#fde898",
+  gray:   "#e8eaed",
 };
 
 // occupancy[dropId] = itemId | null
@@ -37,6 +37,56 @@ const stagingPositions = {};
 
 let uiBusy = false;
 
+// ── Duck images (Image display mode) ─────────────────────
+
+const DUCK_IMAGES = [
+  "images/ducks/blue_goose.png",
+  "images/ducks/blue_winged_teal.png",
+  "images/ducks/brant.png",
+  "images/ducks/bufflehead.png",
+  "images/ducks/canada_goose.png",
+  "images/ducks/canvasback.png",
+  "images/ducks/cinnamon_teal.png",
+  "images/ducks/common_eider.png",
+  "images/ducks/common_loon.png",
+  "images/ducks/common_merganser.png",
+  "images/ducks/gadwall.png",
+  "images/ducks/green_winged_teal.png",
+  "images/ducks/hooded_merganser.png",
+  "images/ducks/king_eider.png",
+  "images/ducks/mallard.png",
+  "images/ducks/mute_swan.png",
+  "images/ducks/northern_shoveler.png",
+  "images/ducks/red_breasted_merganser.png",
+  "images/ducks/red_throated_loon.png",
+  "images/ducks/redhead.png",
+  "images/ducks/ring_necked.png",
+  "images/ducks/ruddy.png",
+  "images/ducks/snow_goose.png",
+  "images/ducks/surf_scoter.png",
+  "images/ducks/tundra_swan.png",
+  "images/ducks/wigeon.png",
+  "images/ducks/wood.png",
+];
+
+// Realistic mode: assigned once per game, color → random duck image
+const colorImages = {};
+
+// Cartoon mode: color → matching colored duck image
+const CARTOON_IMAGES = {
+  teal:   "images/colors/teal.png",
+  purple: "images/colors/purple.png",
+  gold:   "images/colors/gold.png",
+  gray:   "images/colors/gray.png",
+};
+
+function assignColorImages() {
+  const shuffled = [...DUCK_IMAGES].sort(() => Math.random() - 0.5);
+  ITEM_COLORS.forEach((color, i) => {
+    colorImages[color] = shuffled[i % shuffled.length];
+  });
+}
+
 // ── Item color helpers ────────────────────────────────────
 
 function assignColor(itemEl) {
@@ -48,8 +98,26 @@ function assignColor(itemEl) {
 
 function updateItemVisual(itemEl) {
   const color = itemColors[itemEl.id];
-  if (color) {
-    itemEl.style.setProperty("--item-color", COLOR_HEX[color] ?? "#ccc");
+  if (!color) return;
+  itemEl.style.setProperty("--item-color", COLOR_HEX[color] ?? "#ccc");
+  const display = window.settings?.display ?? "Icon";
+  if (display === "Realistic" || display === "Cartoon") {
+    const src = display === "Cartoon"
+      ? (CARTOON_IMAGES[color] ?? "")
+      : (colorImages[color] ?? "");
+    itemEl.textContent = "";
+    let img = itemEl.querySelector("img.duck-img");
+    if (!img) {
+      img = document.createElement("img");
+      img.className = "duck-img";
+      itemEl.appendChild(img);
+    }
+    img.src = src;
+    img.alt = color + " duck";
+  } else {
+    const img = itemEl.querySelector("img.duck-img");
+    if (img) img.remove();
+    itemEl.textContent = "🦆";
   }
 }
 
@@ -270,6 +338,7 @@ async function fillBoard() {
       fillBoard._everFilled = true;
       document.dispatchEvent(new CustomEvent("game:board-filled"));
     }
+    document.dispatchEvent(new CustomEvent("game:board-updated"));
   } finally {
     setUiBusy(false);
   }
@@ -279,8 +348,9 @@ function buildShiftWaypoints(itemEl, fromIdx, toIdx) {
   const step = toIdx > fromIdx ? 1 : -1;
   const pts = [];
   for (let i = fromIdx + step; step > 0 ? i <= toIdx : i >= toIdx; i += step) {
-    const cell = document.getElementById(DROP_ORDER[i]);
-    pts.push(centeredInCell(itemEl, cell));
+    const dropId = DROP_ORDER[i];
+    const cell = document.getElementById(dropId);
+    pts.push({ ...centeredInCell(itemEl, cell), dropId });
   }
   return pts;
 }
@@ -288,9 +358,9 @@ function buildShiftWaypoints(itemEl, fromIdx, toIdx) {
 function buildFillWaypoints(itemEl, toIdx) {
   const pts = [];
   for (let i = 0; i <= toIdx; i++) {
-    const cell = document.getElementById(DROP_ORDER[i]);
-    const wp = centeredInCell(itemEl, cell);
-    // First hop out of the UFO: grow from nothing and fade in
+    const dropId = DROP_ORDER[i];
+    const cell = document.getElementById(dropId);
+    const wp = { ...centeredInCell(itemEl, cell), dropId };
     if (i === 0) wp.opts = { fromScale: 0, toScale: 1, fromOpacity: 0, toOpacity: 1 };
     pts.push(wp);
   }
@@ -312,12 +382,49 @@ async function runStaggered(trajectories) {
   });
 }
 
-// Each waypoint is { left, top } or { left, top, opts }
+function setDuckFacing(itemEl, direction) {
+  const img = itemEl.querySelector("img.duck-img");
+  if (!img) return;
+  img.style.transform = direction === "left" ? "scaleX(-1)" : "scaleX(1)";
+}
+
+// Each waypoint is { left, top } or { left, top, opts, dropId }
 async function animateTrajectory({ itemEl, waypoints }, onFirst) {
   for (let i = 0; i < waypoints.length; i++) {
     const wp = waypoints[i];
+    // Set facing based on movement direction before each hop
+    if (i > 0 || waypoints.length === 1) {
+      const prev = i > 0 ? waypoints[i - 1] : null;
+      if (prev && wp.dropId && prev.dropId) {
+        const fromCoord = DROP_COORDS[prev.dropId];
+        const toCoord   = DROP_COORDS[wp.dropId];
+        if (fromCoord && toCoord) {
+          // Moving right (increasing col, or row 0→1 snake direction) → face right
+          // Moving left (decreasing col, or row 1→0 snake direction) → face left
+          const colDiff = toCoord.col - fromCoord.col;
+          const rowDiff = toCoord.row - fromCoord.row;
+          if (colDiff !== 0 || rowDiff !== 0) {
+            // Snake: row 0 goes left→right, row 1 goes right→left
+            // A move from row 0 to row 1 wraps right→right; row 1 to row 0 wraps left→left
+            const goingRight = rowDiff > 0 ? true  // going down the snake
+                             : rowDiff < 0 ? false // going up the snake
+                             : colDiff > 0;         // same row, check col direction
+            setDuckFacing(itemEl, goingRight ? "right" : "left");
+          }
+        }
+      } else if (prev) {
+        // No dropId info — use pixel direction
+        const goingRight = wp.left >= (prev?.left ?? wp.left);
+        setDuckFacing(itemEl, goingRight ? "right" : "left");
+      }
+    }
     await animateTo(itemEl, wp.left, wp.top, 400, wp.opts ?? {});
     if (i === 0 && typeof onFirst === "function") onFirst();
+  }
+  // Set final facing based on which row the duck ended up in
+  const finalDropId = itemEl.dataset.dropId;
+  if (finalDropId && DROP_COORDS[finalDropId]) {
+    setDuckFacing(itemEl, DROP_COORDS[finalDropId].row === 1 ? "left" : "right");
   }
 }
 
@@ -360,10 +467,16 @@ async function moveItemToCell(itemId, targetDropId) {
       animateTo(itemEl, movingTarget.left, movingTarget.top),
       animateTo(displacedEl, displacedTarget.left, displacedTarget.top),
     ]);
+    setDuckFacing(itemEl, DROP_COORDS[targetDropId]?.row === 1 ? "left" : "right");
+    const dispDrop = currentDropId(displacedEl);
+    if (dispDrop && DROP_COORDS[dispDrop]) {
+      setDuckFacing(displacedEl, DROP_COORDS[dispDrop].row === 1 ? "left" : "right");
+    }
   } else {
     if (srcDropId) occupancy[srcDropId] = null;
     const pos = centeredInCell(itemEl, targetCell);
     await animateTo(itemEl, pos.left, pos.top);
+    setDuckFacing(itemEl, DROP_COORDS[targetDropId]?.row === 1 ? "left" : "right");
   }
 }
 
@@ -390,8 +503,29 @@ async function sendToStaging(itemId) {
 
 function itemNum(id) { return Number(id.replace(/\D/g, "")); }
 
+let _ufoEl = null;     // set by initGame
+let _ufoTimer = null;  // pending phase transition
+
 function setUiBusy(busy) {
   uiBusy = busy;
+  if (!_ufoEl) return;
+  clearTimeout(_ufoTimer);
+  if (busy) {
+    // Phase 1: smooth tilt transition
+    _ufoEl.classList.remove("ufo-rocking");
+    _ufoEl.classList.add("ufo-tilting");
+    // Phase 2: start rocking once tilt transition finishes (500ms)
+    _ufoTimer = setTimeout(() => {
+      if (uiBusy) _ufoEl.classList.add("ufo-rocking");
+    }, 500);
+  } else {
+    // Stop rocking, transition smoothly back to upright
+    _ufoEl.classList.remove("ufo-rocking");
+    // ufo-tilting still set — removing it triggers the return transition
+    _ufoTimer = setTimeout(() => {
+      _ufoEl.classList.remove("ufo-tilting");
+    }, 16); // one frame to let browser register the transition-enabled state
+  }
 }
 
 let _actionCommitted = false;
@@ -677,21 +811,25 @@ async function resolveMatch(goal, section) {
 // ── Init ──────────────────────────────────────────────────
 
 function initGame() {
+  assignColorImages();
   const items = getAllItems();
   const layer = document.getElementById("item-layer");
   const layerRect = layer.getBoundingClientRect();
   const stagingEl = document.getElementById("staging-area");
   const stagingRect = stagingEl.getBoundingClientRect();
 
-  // Create the UFO image inside item-layer, sized to fill the staging area
+  // Create a wrapper for the idle hover bob, with the UFO img inside for tilt/glow
+  const ufoWrap = document.createElement("div");
+  ufoWrap.id = "staging-ufo-wrap";
+  ufoWrap.style.left   = (stagingRect.left - layerRect.left) + "px";
+  ufoWrap.style.top    = (stagingRect.top  - layerRect.top)  + "px";
+  ufoWrap.style.width  = stagingRect.width  + "px";
+  ufoWrap.style.height = stagingRect.height + "px";
+
   const ufoEl = document.createElement("img");
   ufoEl.id = "staging-ufo";
   ufoEl.src = "images/transparent/ufo.png";
   ufoEl.alt = "UFO — click to fill board";
-  ufoEl.style.left   = (stagingRect.left - layerRect.left) + "px";
-  ufoEl.style.top    = (stagingRect.top  - layerRect.top)  + "px";
-  ufoEl.style.width  = stagingRect.width  + "px";
-  ufoEl.style.height = stagingRect.height + "px";
   ufoEl.addEventListener("click", () => {
     if (uiBusy) return;
     if (fillBoard._everFilled) {
@@ -700,7 +838,9 @@ function initGame() {
       fillBoard();
     }
   });
-  layer.appendChild(ufoEl);
+  ufoWrap.appendChild(ufoEl);
+  _ufoEl = ufoEl;
+  layer.appendChild(ufoWrap);
 
   // Size items to 90% of a drop cell
   const firstCell = document.querySelector(".drop-cell");
@@ -1064,12 +1204,14 @@ document.addEventListener("game:verdict", async e => {
 // ── Mass Abducktion ───────────────────────────────────────
 
 async function massAbducktion(discardMap, counts) {
-  // Deduct discarded action counts and fire complete events for each
-  if (counts && discardMap) {
+  // counts are already deducted by app.js discardActionCards before this is called.
+  // Fire complete events so badges refresh and actionsUsed increments.
+  if (discardMap) {
     Object.entries(discardMap).forEach(([name, qty]) => {
-      if (qty > 0 && name in counts) {
-        counts[name] = Math.max(0, counts[name] - qty);
-        document.dispatchEvent(new CustomEvent("game:action-complete", { detail: { name } }));
+      if (qty > 0) {
+        for (let i = 0; i < qty; i++) {
+          document.dispatchEvent(new CustomEvent("game:action-complete", { detail: { name, massdiscard: true } }));
+        }
       }
     });
   }
@@ -1172,4 +1314,5 @@ window.Game = {
   isUiBusy: () => uiBusy,
   occupancy,
   actionCounts: null, // set by index.html after load
+  colorImages,
 };

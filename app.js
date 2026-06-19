@@ -3,6 +3,55 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/DodoDuckUFO/sw.js');
 }
 
+// ── Storage keys ──────────────────────────────────────────
+const HIGH_SCORES_KEY = "abducktion_highscores";
+const HIGH_SCORES_MAX = 15;
+
+// ── Action deck definitions ───────────────────────────────
+const DECK_CONFIGS = {
+  Original: {
+    "Parallel Universe": 2, "Abducktion": 8, "Dubabducktion": 6,
+    "Body Snatcher": 6, "Orbit": 6, "Wormhole": 4, "Shape Shifter": 6,
+    "Gravity Assist": 6, "Swap": 10, "Teleport": 4, "Black Hole": 2,
+  },
+  Boosted: {
+    "Parallel Universe": 4, "Abducktion": 8, "Dubabducktion": 8,
+    "Body Snatcher": 8, "Orbit": 8, "Wormhole": 6, "Shape Shifter": 8,
+    "Gravity Assist": 8, "Swap": 10, "Teleport": 6, "Black Hole": 4,
+  },
+  Fair: {
+    "Parallel Universe": 10, "Abducktion": 10, "Dubabducktion": 10,
+    "Body Snatcher": 10, "Orbit": 10, "Wormhole": 10, "Shape Shifter": 10,
+    "Gravity Assist": 10, "Swap": 10, "Teleport": 10, "Black Hole": 10,
+  },
+};
+
+// ── Action deck state ─────────────────────────────────────
+let actionDeck    = [];  // draw pile (array of name strings)
+let actionDiscard = [];  // discard pile
+
+function buildDeck(deckName) {
+  const config = DECK_CONFIGS[deckName] ?? DECK_CONFIGS.Original;
+  const deck = [];
+  for (const [name, count] of Object.entries(config)) {
+    for (let i = 0; i < count; i++) deck.push(name);
+  }
+  return shuffleArray(deck);
+}
+
+function drawFromDeck(count) {
+  const drawn = [];
+  for (let i = 0; i < count; i++) {
+    if (actionDeck.length === 0) {
+      if (actionDiscard.length === 0) break;
+      actionDeck = shuffleArray([...actionDiscard]);
+      actionDiscard = [];
+    }
+    drawn.push(actionDeck.pop());
+  }
+  return drawn;
+}
+
 // ── Page navigation ───────────────────────────────────────
 function showPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
@@ -14,11 +63,35 @@ document.getElementById("btn-start").addEventListener("click", () => {
   showPage("page-game");
   if (!gameInitialized) {
     gameInitialized = true;
+    initGoals();
+    initActionDeck();
     requestAnimationFrame(() => requestAnimationFrame(() => Game.initGame()));
   }
 });
 document.getElementById("btn-play-again").addEventListener("click", () => {
   location.reload();
+});
+
+function openInfoModal() {
+  document.getElementById("info-modal").classList.add("open");
+}
+function closeInfoModal() {
+  document.getElementById("info-modal").classList.remove("open");
+}
+
+document.getElementById("btn-info-splash").addEventListener("click", openInfoModal);
+document.getElementById("btn-info-game").addEventListener("click", openInfoModal);
+document.getElementById("info-close").addEventListener("click", closeInfoModal);
+document.getElementById("info-modal").addEventListener("click", e => {
+  if (e.target === document.getElementById("info-modal")) closeInfoModal();
+});
+
+document.getElementById("btn-delete-data").addEventListener("click", () => {
+  if (confirm("Delete all saved scores and settings?")) {
+    localStorage.removeItem(HIGH_SCORES_KEY);
+    localStorage.removeItem("abducktion_settings");
+    location.reload();
+  }
 });
 document.getElementById("board-grid").addEventListener("dblclick", () => endGame());
 
@@ -51,7 +124,7 @@ const ALL_GOALS = [
   { name: "Duckfoot",           shape: "rectangle", pattern: "-A-AAA",     cols: 3, points:  4, description: "Three ducks of the same color in a column, with the top-left and top-middle ignored." },
   { name: "Pairbond",           shape: "rectangle", pattern: "ABAB",       cols: 2, points:  2, description: "Two alternating colors in a 2×2 block." },
   { name: "Corkscrew",          shape: "rectangle", pattern: "ABABAB",     cols: 3, points:  7, description: "Two alternating colors across a 3×2 block." },
-  { name: "Flying V",           shape: "rectangle", pattern: "-A-A-A",     cols: 3, points: 50, description: "Three ducks of the same color in a diagonal V shape." },
+  { name: "Flying V",           shape: "rectangle", pattern: "-A-A-A",     cols: 3, points:  4, description: "Three ducks of the same color in a diagonal V shape." },
   { name: "Mating Dance",       shape: "line",      pattern: "AABB",       cols: 4, points:  2, description: "Two pairs of matching colors in a row of four." },
   { name: "Paddling",           shape: "line",      pattern: "ABCD",       cols: 4, points:  1, description: "Four ducks all different colors in a row." },
   { name: "Alligator",          shape: "rectangle", pattern: "----AAAAA-", cols: 5, points:  9, description: "Four ignored spaces, then four of the same color, then one ignored." },
@@ -91,10 +164,39 @@ function drawGoal() {
   return goalPool.length > 0 ? goalPool.pop() : null;
 }
 
+// Filtered goal pool based on settings — computed once at game start
+let ACTIVE_GOAL_POOL = ALL_GOALS;
+
+function getGoalPool() {
+  const s = window.settings ?? {};
+  return s.removeHighGoals ? ALL_GOALS.filter(g => g.points <= 6) : ALL_GOALS;
+}
+
 function initGoals() {
-  goalPool = shuffleArray([...ALL_GOALS]);
-  activeGoals = [drawGoal(), drawGoal(), drawGoal()];
+  ACTIVE_GOAL_POOL = getGoalPool();
+  goalPool = shuffleArray([...ACTIVE_GOAL_POOL]);
+  const count = window.settings?.goalCount ?? 3;
+  activeGoals = [];
+  for (let i = 0; i < count; i++) activeGoals.push(drawGoal());
   renderActiveGoals();
+}
+
+function buildGoalCardFace(goal) {
+  const face = document.createElement("div");
+  face.className = "goal-card-front";
+
+  const name = document.createElement("div");
+  name.className = "goal-card-name";
+  name.textContent = goal.name;
+
+  const pts = document.createElement("div");
+  pts.className = "goal-card-points";
+  pts.textContent = goal.points + " pts";
+
+  face.appendChild(name);
+  face.appendChild(pts);
+  face.appendChild(buildPatternGrid(goal.pattern, goal.cols));
+  return face;
 }
 
 function renderActiveGoals() {
@@ -106,30 +208,86 @@ function renderActiveGoals() {
     card.className = "goal-card";
     card.dataset.goalIdx = idx;
 
-    const name = document.createElement("div");
-    name.className = "goal-card-name";
-    name.textContent = goal.name;
+    const inner = document.createElement("div");
+    inner.className = "goal-card-inner";
+    inner.appendChild(buildGoalCardFace(goal));
 
-    const pts = document.createElement("div");
-    pts.className = "goal-card-points";
-    pts.textContent = goal.points + " pts";
+    const back = document.createElement("div");
+    back.className = "goal-card-back";
+    const backImg = document.createElement("img");
+    backImg.src = "images/transparent/ufo.png";
+    backImg.alt = "";
+    backImg.style.cssText = "width:70%;opacity:0.55;pointer-events:none;";
+    back.appendChild(backImg);
+    inner.appendChild(back);
 
-    card.appendChild(name);
-    card.appendChild(pts);
-    card.appendChild(buildPatternGrid(goal.pattern, goal.cols));
+    card.appendChild(inner);
     card.addEventListener("click", () => handleGoalClick(goal, idx));
     row.appendChild(card);
+  });
+  highlightMatchingGoals();
+}
+
+function highlightMatchingGoals() {
+  const row = document.getElementById("goal-cards-row");
+  if (!row) return;
+  row.querySelectorAll(".goal-card").forEach(card => {
+    const idx = Number(card.dataset.goalIdx);
+    const goal = activeGoals[idx];
+    if (!goal) { card.classList.remove("goal-match"); return; }
+    const { matched } = Game.checkGoal(goal);
+    card.classList.toggle("goal-match", matched);
+  });
+}
+
+function flipGoalCard(card, newGoal) {
+  return new Promise(resolve => {
+    const inner = card.querySelector(".goal-card-inner");
+    const HALF = 175;
+    const FULL = 350;
+    card.classList.add("flipping");
+    setTimeout(() => {
+      if (newGoal) {
+        // Swap front face content to new goal before second half of flip
+        const front = inner.querySelector(".goal-card-front");
+        front.innerHTML = "";
+        const name = document.createElement("div");
+        name.className = "goal-card-name";
+        name.textContent = newGoal.name;
+        const pts = document.createElement("div");
+        pts.className = "goal-card-points";
+        pts.textContent = newGoal.points + " pts";
+        front.appendChild(name);
+        front.appendChild(pts);
+        front.appendChild(buildPatternGrid(newGoal.pattern, newGoal.cols));
+      } else {
+        card.classList.add("flip-vanish");
+      }
+    }, HALF);
+    setTimeout(() => {
+      card.classList.remove("flipping", "flip-vanish");
+      resolve();
+    }, FULL);
   });
 }
 
 async function handleGoalClick(goal, idx) {
   if (Game.isUiBusy()) return;
+  if (Game.getActiveAction()) return;
   const result = Game.checkGoal(goal);
   if (!result.matched) {
     openGoalModal(goal);
     return;
   }
-  await Game.resolveMatch(goal, result.section);
+  const card = document.querySelector(`.goal-card[data-goal-idx="${idx}"]`);
+  const nextGoal = goalPool.length > 0 ? goalPool[goalPool.length - 1] : null;
+
+  // Start flip and board resolution concurrently
+  const [_] = await Promise.all([
+    card ? flipGoalCard(card, nextGoal) : Promise.resolve(),
+    Game.resolveMatch(goal, result.section),
+  ]);
+
   totalScore += goal.points;
   collectedGoals.push(goal);
   activeGoals[idx] = drawGoal();
@@ -137,27 +295,34 @@ async function handleGoalClick(goal, idx) {
   renderActiveGoals();
   showAwardToast(goal, awarded);
 
-  if (collectedGoals.length === ALL_GOALS.length) {
+  if (collectedGoals.length === ACTIVE_GOAL_POOL.length) {
     setTimeout(() => endGame(), 1500);
   }
 }
 
 function awardActionCards(count) {
-  const available = ACTION_DATA.filter(a => !a.alwaysAvailable);
+  const drawn = drawFromDeck(count);
   const awarded = [];
-  for (let i = 0; i < count; i++) {
-    const pick = available[Math.floor(Math.random() * available.length)];
-    actionCounts[pick.name] = (actionCounts[pick.name] ?? 0) + 1;
-    awarded.push(pick.name);
-    const card = document.querySelector(`.action-card[data-action="${CSS.escape(pick.name)}"]`);
+  for (const name of drawn) {
+    actionCounts[name] = (actionCounts[name] ?? 0) + 1;
+    awarded.push(name);
+    const card = document.querySelector(`.action-card[data-action="${CSS.escape(name)}"]`);
     if (card) {
       const badge = card.querySelector(".action-count");
-      if (badge) badge.textContent = actionCounts[pick.name];
+      if (badge) badge.textContent = actionCounts[name];
       card.style.opacity = "";
       card.style.pointerEvents = "";
     }
   }
   return awarded;
+}
+
+function discardActionCards(discardMap) {
+  for (const [name, qty] of Object.entries(discardMap)) {
+    if (qty <= 0) continue;
+    for (let i = 0; i < qty; i++) actionDiscard.push(name);
+    actionCounts[name] = Math.max(0, (actionCounts[name] ?? 0) - qty);
+  }
 }
 
 function showAwardToast(matchedGoal, awardedActions) {
@@ -180,19 +345,100 @@ function showAwardToast(matchedGoal, awardedActions) {
   }, 4000);
 }
 
-initGoals();
+// ── Rank titles ───────────────────────────────────────────
+const RANK_TITLES = [
+  { min: 129, title: "CEO" },
+  { min: 100, title: "Vice President" },
+  { min:  50, title: "Manager" },
+  { min:  31, title: "Supervisor" },
+  { min:  15, title: "Associate" },
+  { min:   0, title: "Intern" },
+];
+
+function getRankTitle(pts) {
+  return RANK_TITLES.find(r => pts >= r.min)?.title ?? "Intern";
+}
+
+// ── High scores ───────────────────────────────────────────
+
+function loadHighScores() {
+  try { return JSON.parse(localStorage.getItem(HIGH_SCORES_KEY)) ?? []; }
+  catch (_) { return []; }
+}
+
+function saveHighScores(scores) {
+  localStorage.setItem(HIGH_SCORES_KEY, JSON.stringify(scores));
+}
+
+function addHighScore(pts) {
+  const now = new Date();
+  const entry = {
+    pts,
+    date: now.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" }),
+    time: now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+    _id: now.getTime(),
+  };
+  const scores = loadHighScores();
+  scores.push(entry);
+  scores.sort((a, b) => b.pts - a.pts);
+  scores.splice(HIGH_SCORES_MAX);
+  saveHighScores(scores);
+  // Return scores and the index of this entry (-1 if bumped out of top 15)
+  const idx = scores.findIndex(s => s._id === entry._id);
+  return { scores, entry, idx };
+}
+
+function renderHighScores(scores, entry, currentIdx) {
+  const tbody = document.getElementById("high-scores-body");
+  tbody.innerHTML = "";
+
+  const top5 = scores.slice(0, 5);
+  let showedCurrent = false;
+
+  top5.forEach((s, i) => {
+    const isCurrent = (i === currentIdx);
+    if (isCurrent) showedCurrent = true;
+    appendScoreRow(tbody, i + 1, s, isCurrent);
+  });
+
+  if (!showedCurrent) {
+    const sep = document.createElement("tr");
+    sep.className = "hs-divider";
+    sep.innerHTML = `<td colspan="4"></td>`;
+    tbody.appendChild(sep);
+    // currentIdx >= 5 means it's in saved range but outside top 5
+    // currentIdx === -1 means it was bumped out entirely (score too low)
+    const rank = currentIdx >= 0 ? currentIdx + 1 : null;
+    appendScoreRow(tbody, rank, entry, true);
+  }
+}
+
+function appendScoreRow(tbody, rank, s, isCurrent) {
+  const tr = document.createElement("tr");
+  if (isCurrent) tr.className = "hs-current";
+  tr.innerHTML = `
+    <td>${rank === null ? "16+" : rank}</td>
+    <td>${s.pts} pts</td>
+    <td>${s.date}</td>
+    <td>${s.time}</td>
+  `;
+  tbody.appendChild(tr);
+}
 
 // ── End game ──────────────────────────────────────────────
 function endGame() {
   document.getElementById("results-score").textContent = totalScore + " pts";
   document.getElementById("results-goals").textContent = collectedGoals.length;
   document.getElementById("results-actions").textContent = actionsUsed;
+  document.getElementById("results-rank").textContent = getRankTitle(totalScore);
+  const { scores, entry, idx } = addHighScore(totalScore);
+  renderHighScores(scores, entry, idx);
   showPage("page-results");
 }
 
 // ── Progress modal ────────────────────────────────────────
 function openProgressModal() {
-  const header = `${collectedGoals.length} of ${ALL_GOALS.length} cards (${totalScore} points)`;
+  const header = `${collectedGoals.length} of ${ACTIVE_GOAL_POOL.length} cards (${totalScore} points)`;
   document.getElementById("progress-modal-score").textContent = header;
   const list = document.getElementById("progress-goal-list");
   list.innerHTML = "";
@@ -242,11 +488,13 @@ document.getElementById("progress-modal").addEventListener("click", e => {
 });
 
 document.addEventListener("game:ufo-click", () => openProgressModal());
+document.addEventListener("game:board-updated", () => highlightMatchingGoals());
+document.addEventListener("game:action-complete", () => highlightMatchingGoals());
 
 // ── Action wiring ─────────────────────────────────────────
 const actionCounts = {};
 let actionsUsed = 0;
-ACTION_DATA.forEach(a => { if (!a.alwaysAvailable) actionCounts[a.name] = a.count; });
+
 Game.actionCounts = actionCounts;
 
 // Wrap openActionDetail before rendering the list so card listeners use the wired version
@@ -257,7 +505,18 @@ window.openActionDetail = function(name) {
   _origOpen(name);
   Game.selectAction(name);
 };
-renderActionList();
+
+function initActionDeck() {
+  ACTION_DATA.forEach(a => { if (!a.alwaysAvailable) actionCounts[a.name] = 0; });
+  actionDeck = buildDeck(window.settings?.deck ?? "Original");
+  actionDiscard = [];
+  const startingCards = window.settings?.startingCards ?? 5;
+  const initialHand = drawFromDeck(startingCards);
+  for (const name of initialHand) {
+    actionCounts[name] = (actionCounts[name] ?? 0) + 1;
+  }
+  renderActionList();
+}
 
 // Wrap closeActionDetail so the game engine is always cancelled together
 const _origClose = closeActionDetail;
@@ -300,6 +559,7 @@ document.addEventListener("click", e => {
   }
   if (e.target.id === "mass-confirm-btn") {
     const discardMap = e.target._discardMap ?? {};
+    discardActionCards(discardMap);
     Game.massAbducktion(discardMap, actionCounts);
     closeActionDetail();
     return;
@@ -320,10 +580,16 @@ document.addEventListener("game:action-complete", async e => {
     closeActionDetail();
   }
   const name = e.detail?.name;
+  const isMassDiscard = !!e.detail?.massdiscard;
   if (name) {
     actionsUsed++;
     const action = ACTION_DATA.find(a => a.name === name);
     if (!action?.alwaysAvailable) {
+      // For mass-discard events, counts were already deducted by discardActionCards
+      if (!isMassDiscard) {
+        // Move spent card to discard pile (count was decremented by completeAction in game.js)
+        actionDiscard.push(name);
+      }
       const card = document.querySelector(`.action-card[data-action="${CSS.escape(name)}"]`);
       if (card) {
         const badge = card.querySelector(".action-count");

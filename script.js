@@ -68,6 +68,21 @@ function buildPatternGrid(pattern, cols) {
 
 // ── Action system ─────────────────────────────────────────
 
+const ACTION_IMAGES = {
+  "Teleport":          "images/actions/teleport.png",
+  "Swap":              "images/actions/swap.png",
+  "Gravity Assist":    "images/actions/gravity_assist.png",
+  "Abducktion":        "images/actions/abducktion.png",
+  "Dubabducktion":     "images/actions/dubabduction.png",
+  "Black Hole":        "images/actions/blackhole.png",
+  "Parallel Universe": "images/actions/parallel_universe.png",
+  "Shape Shifter":     "images/actions/shape_shifter.png",
+  "Orbit":             "images/actions/orbit.png",
+  "Wormhole":          "images/actions/wormhole.png",
+  "Body Snatcher":     "images/actions/body_snatcher.png",
+  "Mass Abducktion":   "images/actions/mass_abducktion.png",
+};
+
 const ACTION_DATA = [
   {
     name: "Teleport",
@@ -145,10 +160,10 @@ const ACTION_DATA = [
 ];
 
 const WORMHOLE_COLORS = [
-  { name: "blue",   hex: "#aed6f1" },
-  { name: "yellow", hex: "#fef08a" },
-  { name: "gray",   hex: "#c8c8c8" },
-  { name: "pink",   hex: "#f5b8cd" },
+  { name: "teal",   hex: "#5ec9be" },
+  { name: "purple", hex: "#9d7ff7" },
+  { name: "gold",   hex: "#f5b800" },
+  { name: "gray",   hex: "#9ca3af" },
 ];
 
 let activeAction = null; // name string or null
@@ -170,8 +185,13 @@ function renderActionList() {
     if (!action.alwaysAvailable) {
       const badge = document.createElement("span");
       badge.className = "action-count";
-      badge.textContent = action.count;
+      const liveCount = window.Game?.actionCounts?.[action.name] ?? 0;
+      badge.textContent = liveCount;
       card.appendChild(badge);
+      if (liveCount <= 0) {
+        card.style.opacity = "0.4";
+        card.style.pointerEvents = "none";
+      }
     }
     card.addEventListener("click", () => openActionDetail(action.name));
     area.appendChild(card);
@@ -189,7 +209,16 @@ function openActionDetail(name) {
 
   document.getElementById("action-detail-name").textContent    = action.name;
   document.getElementById("action-detail-desc").textContent    = action.description;
-  document.getElementById("action-detail-graphic").textContent = "[graphic placeholder]";
+  const graphicEl = document.getElementById("action-detail-graphic");
+  graphicEl.innerHTML = "";
+  const src = ACTION_IMAGES[name];
+  if (src) {
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = name;
+    img.style.cssText = "width:100%;height:100%;object-fit:contain;border-radius:8px;";
+    graphicEl.appendChild(img);
+  }
 
   const controls = document.getElementById("action-detail-controls");
   controls.innerHTML = "";

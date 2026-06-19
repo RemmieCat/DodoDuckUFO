@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Abducktion</title>
   <link rel="manifest" href="./manifest.json" />
   <link rel="apple-touch-icon" href="./icon-192.png" />
@@ -24,10 +24,86 @@
       <div class="splash-beam"></div>
     </div>
     <div class="splash-duck-wrap">
-      <img class="splash-duck" src="images/mallard.png" alt="">
+      <img class="splash-duck" src="images/colors/white.png" alt="">
     </div>
   </div>
   <button class="btn-primary" id="btn-start">Start Game</button>
+  <button class="btn-settings" id="btn-settings" aria-label="Settings">&#9881;</button>
+  <button class="btn-info" id="btn-info-splash" aria-label="How to play">&#9432;</button>
+  <div class="splash-footer">
+    <span class="splash-version">v1.0</span>
+    <button class="splash-delete-data" id="btn-delete-data">Delete saved data</button>
+  </div>
+</div>
+
+<!-- ══ SETTINGS MODAL ══════════════════════════════════ -->
+<div id="settings-modal" class="goal-modal-backdrop">
+  <div class="settings-modal-card">
+    <button class="goal-modal-close" id="settings-close">&#x2715;</button>
+    <h2 class="settings-title">Settings</h2>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Goals</div>
+
+      <div class="settings-field">
+        <div class="settings-field-label">Number of goal cards</div>
+        <div class="settings-radio-group" data-setting="goalCount">
+          <button class="settings-radio" data-value="3">3</button>
+          <button class="settings-radio" data-value="4">4</button>
+          <button class="settings-radio" data-value="5">5</button>
+          <button class="settings-radio" data-value="6">6</button>
+        </div>
+      </div>
+
+      <div class="settings-field settings-field-check">
+        <label class="settings-check-label" for="setting-removeHighGoals">
+          Remove goals over 6 points
+          <span class="settings-check-hint">Limits goal deck to 15 easier cards</span>
+        </label>
+        <input type="checkbox" id="setting-removeHighGoals" class="settings-check">
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Actions</div>
+
+      <div class="settings-field">
+        <div class="settings-field-label">Starting cards</div>
+        <div class="settings-radio-group" data-setting="startingCards">
+          <button class="settings-radio" data-value="5">5</button>
+          <button class="settings-radio" data-value="7">7</button>
+          <button class="settings-radio" data-value="9">9</button>
+        </div>
+      </div>
+
+      <div class="settings-field">
+        <div class="settings-field-label">Deck</div>
+        <div class="settings-radio-group" data-setting="deck">
+          <button class="settings-radio" data-value="Original">Original</button>
+          <button class="settings-radio" data-value="Boosted">Boosted</button>
+          <button class="settings-radio" data-value="Fair">Fair</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">Display</div>
+
+      <div class="settings-field">
+        <div class="settings-field-label">Item appearance</div>
+        <div class="settings-radio-group" data-setting="display">
+          <button class="settings-radio" data-value="Icon">Icon</button>
+          <button class="settings-radio" data-value="Cartoon">Cartoon</button>
+          <button class="settings-radio" data-value="Realistic">Realistic</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-actions">
+      <button class="settings-btn-cancel" id="settings-cancel">Cancel</button>
+      <button class="settings-btn-update" id="settings-update">Update</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ GAME ════════════════════════════════════════════ -->
@@ -40,7 +116,10 @@
 
     <!-- Goals -->
     <div class="goal-area">
-      <div class="area-label">Goals</div>
+      <div class="area-label-row">
+        <div class="area-label">Goals</div>
+        <button class="btn-info-inline" id="btn-info-game" aria-label="How to play">&#9432;</button>
+      </div>
       <div class="goal-cards-row" id="goal-cards-row"></div>
     </div>
 
@@ -67,6 +146,73 @@
 
   </div>
 
+</div>
+
+<!-- ══ INSTRUCTIONS MODAL ══════════════════════════════ -->
+<div id="info-modal" class="goal-modal-backdrop">
+  <div class="info-modal-card">
+    <button class="goal-modal-close" id="info-close">&#x2715;</button>
+    <h2 class="info-modal-title">How to Play</h2>
+    <div class="info-modal-body">
+
+      <section class="info-section">
+        <h3>Objective</h3>
+        <p>Match patterns on the board to your goal cards to score points. Collect as many goals as possible before your action cards run out.</p>
+      </section>
+
+      <section class="info-section">
+        <h3>The Board</h3>
+        <p>The board has 10 spaces arranged in two rows of five. Duck items fill the board in a snake pattern — left to right on the top row, right to left on the bottom. Each duck is one of four colors: teal, purple, gold, or gray.</p>
+      </section>
+
+      <section class="info-section">
+        <h3>Goal Cards</h3>
+        <p>Each goal card shows a color pattern. Tap a goal card to see its full description. When the board contains a matching arrangement, tap the card again to collect it and score its points. New cards are drawn automatically.</p>
+        <p>A gold glow on a card means the current board already matches that goal — tap it to collect!</p>
+        <p>You must complete or cancel any active action before collecting a goal.</p>
+      </section>
+
+      <section class="info-section">
+        <h3>Action Cards</h3>
+        <p>Your hand of action cards lets you rearrange the board. Tap an action to see what it does and activate it. After completing or canceling an action, you return to the card list. Each use spends one card from your hand.</p>
+        <p>When you successfully match a goal, you draw two new action cards as a reward.</p>
+      </section>
+
+      <section class="info-section">
+        <h3>Actions</h3>
+        <dl class="info-actions">
+          <dt>Teleport</dt><dd>Move any duck to any other occupied space. The displaced duck swaps to the vacated spot.</dd>
+          <dt>Swap</dt><dd>Swap two adjacent ducks (left, right, above, or below).</dd>
+          <dt>Gravity Assist</dt><dd>Make two adjacent swaps in a row. The second swap must involve one duck from the first.</dd>
+          <dt>Abducktion</dt><dd>Remove one duck from the board. The board refills from staging.</dd>
+          <dt>Dubabducktion</dt><dd>Remove two adjacent ducks. Both return to staging and the board refills.</dd>
+          <dt>Black Hole</dt><dd>Remove one duck and every other duck on the board that shares its color.</dd>
+          <dt>Parallel Universe</dt><dd>Swap any duck with the one directly above or below it, as many times as you like. Tap End Action when done.</dd>
+          <dt>Shape Shifter</dt><dd>Swap two ducks in the same row (adjacent or skipping one). Those two plus a third neighbor lock as your set to freely rearrange. Tap End Action when done.</dd>
+          <dt>Orbit</dt><dd>Select the upper-left duck of any fully occupied 2×2 block and rotate all four clockwise as many times as you like. Tap End Action when done.</dd>
+          <dt>Wormhole</dt><dd>Select a duck, then choose a new color for it from the palette.</dd>
+          <dt>Body Snatcher</dt><dd>Select three ducks to remove. They are recolored and you drag them back to any empty spaces.</dd>
+          <dt>Mass Abducktion</dt><dd>Always available. Discard exactly 3 action cards from your hand to clear the entire board and refill it.</dd>
+        </dl>
+      </section>
+
+      <section class="info-section">
+        <h3>End of Game</h3>
+        <p>The game ends when all action cards in your hand are exhausted. Any goals that match at that moment are collected automatically. Your final score determines your title:</p>
+        <table class="info-ranks">
+          <tbody>
+            <tr><td>0 – 14</td><td>Intern</td></tr>
+            <tr><td>15 – 30</td><td>Associate</td></tr>
+            <tr><td>31 – 50</td><td>Supervisor</td></tr>
+            <tr><td>51 – 99</td><td>Manager</td></tr>
+            <tr><td>100 – 128</td><td>Vice President</td></tr>
+            <tr><td>129+</td><td>CEO</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+    </div>
+  </div>
 </div>
 
 <!-- ══ GOAL MODAL ══════════════════════════════════════ -->
@@ -97,6 +243,7 @@
 <!-- ══ RESULTS ═════════════════════════════════════════ -->
 <div id="page-results" class="page">
   <h2 class="results-title">Game Over</h2>
+  <div class="results-rank" id="results-rank"></div>
   <div class="results-score" id="results-score">0 pts</div>
 
   <div class="results-stats">
@@ -110,11 +257,27 @@
     </div>
   </div>
 
+  <div class="high-scores-panel">
+    <div class="high-scores-title">High Scores</div>
+    <table class="high-scores-table" id="high-scores-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Score</th>
+          <th>Date</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody id="high-scores-body"></tbody>
+    </table>
+  </div>
+
   <button class="btn-primary" id="btn-play-again">Play Again</button>
 </div>
 
 <script src="./script.js"></script>
 <script src="./game.js"></script>
+<script src="./settings.js"></script>
 <script src="./app.js"></script>
 </body>
 </html>
