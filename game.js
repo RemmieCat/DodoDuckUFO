@@ -81,10 +81,13 @@ const CARTOON_IMAGES = {
 };
 
 function assignColorImages() {
-  const shuffled = [...DUCK_IMAGES].sort(() => Math.random() - 0.5);
-  ITEM_COLORS.forEach((color, i) => {
-    colorImages[color] = shuffled[i % shuffled.length];
-  });
+  const chosen = window.settings?.duckSet;
+  if (Array.isArray(chosen) && chosen.length === 4) {
+    ITEM_COLORS.forEach((color, i) => { colorImages[color] = chosen[i]; });
+  } else {
+    const shuffled = [...DUCK_IMAGES].sort(() => Math.random() - 0.5);
+    ITEM_COLORS.forEach((color, i) => { colorImages[color] = shuffled[i]; });
+  }
 }
 
 // ── Item color helpers ────────────────────────────────────
@@ -1079,6 +1082,10 @@ async function orbitRotate() {
       const pos = centeredInCell(itemEl, cell);
       return animateTo(itemEl, pos.left, pos.top);
     }));
+    [ul, ur, lr, ll].forEach(dropId => {
+      const itemEl = document.getElementById(occupancy[dropId]);
+      if (itemEl) setDuckFacing(itemEl, DROP_COORDS[dropId]?.row === 1 ? "left" : "right");
+    });
   } finally { setUiBusy(false); }
 }
 
@@ -1175,6 +1182,7 @@ document.addEventListener("game:verdict", async e => {
     const cell = document.getElementById(snapId);
     const pos = centeredInCell(itemEl, cell);
     await animateTo(itemEl, pos.left, pos.top, 400, { fromScale: 0, toScale: 1, fromOpacity: 0, toOpacity: 1 });
+    setDuckFacing(itemEl, DROP_COORDS[snapId]?.row === 1 ? "left" : "right");
     st.placedCount++;
     document.dispatchEvent(new CustomEvent("game:bodysnatcher-item-placed", { detail: { itemId: itemEl.id } }));
     if (st.placedCount === 3) completeAction("Body Snatcher", window.Game?.actionCounts);
@@ -1294,7 +1302,6 @@ window.Game = {
     itemColors[st.itemId] = color;
     updateItemVisual(el);
     const dropId = st.origDropId;
-    completeAction("Wormhole", window.Game?.actionCounts);
     if (dropId) {
       occupancy[dropId] = el.id;
       el.dataset.dropId = dropId;
@@ -1308,8 +1315,10 @@ window.Game = {
       setUiBusy(true);
       try {
         await animateTo(el, pos.left, pos.top, 400, { fromScale: 0, toScale: 1, fromOpacity: 0, toOpacity: 1 });
+        setDuckFacing(el, DROP_COORDS[dropId]?.row === 1 ? "left" : "right");
       } finally { setUiBusy(false); }
     }
+    completeAction("Wormhole", window.Game?.actionCounts);
   },
   isUiBusy: () => uiBusy,
   occupancy,

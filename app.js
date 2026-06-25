@@ -93,7 +93,7 @@ document.getElementById("btn-delete-data").addEventListener("click", () => {
     location.reload();
   }
 });
-document.getElementById("board-grid").addEventListener("dblclick", () => endGame());
+// double-tap board intentionally does NOT end the game
 
 // ── Board DOM construction ────────────────────────────────
 // Snake layout: top row left→right (drop1–drop5),
@@ -144,6 +144,7 @@ const ALL_GOALS = [
   { name: "Big Dipper",         shape: "rectangle", pattern: "--AAAAAA",   cols: 4, points: 10, description: "Two empty spaces in the top-left, then six ducks of the same color filling the rest of a 4×2 block." },
   { name: "Turtle",             shape: "rectangle", pattern: "-AAA-A---A", cols: 5, points:  9, description: "A turtle-shaped pattern of same-color ducks in a 5×2 block." },
   { name: "Scorpius",           shape: "rectangle", pattern: "A-AA-AA-",   cols: 4, points:  9, description: "A scorpion-shaped pattern of same-color ducks in a 4×2 block." },
+  { name: "Gemini",             shape: "rectangle", pattern: "AA--BA--BB", cols: 5, points: 10, description: "Six ducks in this shape, color, and orientation." },
 ];
 
 // ── Goal system ───────────────────────────────────────────
@@ -169,12 +170,16 @@ let ACTIVE_GOAL_POOL = ALL_GOALS;
 
 function getGoalPool() {
   const s = window.settings ?? {};
-  return s.removeHighGoals ? ALL_GOALS.filter(g => g.points <= 6) : ALL_GOALS;
+  const base = s.removeHighGoals ? ALL_GOALS.filter(g => g.points <= 6) : ALL_GOALS;
+  const shuffled = shuffleArray([...base]);
+  const deckSize = s.goalDeckSize ?? 15;
+  return shuffled.slice(0, Math.min(deckSize, shuffled.length));
 }
 
 function initGoals() {
   ACTIVE_GOAL_POOL = getGoalPool();
-  goalPool = shuffleArray([...ACTIVE_GOAL_POOL]);
+  goalPool = [...ACTIVE_GOAL_POOL];
+  shuffleArray(goalPool);
   const count = window.settings?.goalCount ?? 3;
   activeGoals = [];
   for (let i = 0; i < count; i++) activeGoals.push(drawGoal());
@@ -240,35 +245,36 @@ function highlightMatchingGoals() {
   });
 }
 
-function flipGoalCard(card, newGoal) {
-  return new Promise(resolve => {
-    const inner = card.querySelector(".goal-card-inner");
-    const HALF = 175;
-    const FULL = 350;
-    card.classList.add("flipping");
-    setTimeout(() => {
-      if (newGoal) {
-        // Swap front face content to new goal before second half of flip
-        const front = inner.querySelector(".goal-card-front");
-        front.innerHTML = "";
-        const name = document.createElement("div");
-        name.className = "goal-card-name";
-        name.textContent = newGoal.name;
-        const pts = document.createElement("div");
-        pts.className = "goal-card-points";
-        pts.textContent = newGoal.points + " pts";
-        front.appendChild(name);
-        front.appendChild(pts);
-        front.appendChild(buildPatternGrid(newGoal.pattern, newGoal.cols));
-      } else {
-        card.classList.add("flip-vanish");
-      }
-    }, HALF);
-    setTimeout(() => {
-      card.classList.remove("flipping", "flip-vanish");
-      resolve();
-    }, FULL);
-  });
+// Flip card to UFO back, run midCallback, then flip back to show newGoal (or vanish).
+async function flipGoalCard(card, newGoal, midCallback) {
+  const inner = card.querySelector(".goal-card-inner");
+  const FULL = 350;
+  // Phase 1: flip fully to back so UFO is showing
+  card.classList.add("flipping");
+  await new Promise(resolve => setTimeout(resolve, FULL));
+  // Board fill runs while UFO face is visible
+  if (midCallback) await midCallback();
+  // Update front face content while it's rotated away (invisible)
+  if (newGoal) {
+    const front = inner.querySelector(".goal-card-front");
+    front.innerHTML = "";
+    const name = document.createElement("div");
+    name.className = "goal-card-name";
+    name.textContent = newGoal.name;
+    const pts = document.createElement("div");
+    pts.className = "goal-card-points";
+    pts.textContent = newGoal.points + " pts";
+    front.appendChild(name);
+    front.appendChild(pts);
+    front.appendChild(buildPatternGrid(newGoal.pattern, newGoal.cols));
+  } else {
+    // No new goal — card vanishes; renderActiveGoals() will remove it from DOM
+    card.classList.add("flip-vanish");
+    return;
+  }
+  // Phase 2: flip back to reveal new goal
+  card.classList.remove("flipping");
+  await new Promise(resolve => setTimeout(resolve, FULL));
 }
 
 async function handleGoalClick(goal, idx) {
@@ -282,11 +288,12 @@ async function handleGoalClick(goal, idx) {
   const card = document.querySelector(`.goal-card[data-goal-idx="${idx}"]`);
   const nextGoal = goalPool.length > 0 ? goalPool[goalPool.length - 1] : null;
 
-  // Start flip and board resolution concurrently
-  const [_] = await Promise.all([
-    card ? flipGoalCard(card, nextGoal) : Promise.resolve(),
-    Game.resolveMatch(goal, result.section),
-  ]);
+  // Flip to UFO → fill board → flip back to new goal
+  if (card) {
+    await flipGoalCard(card, nextGoal, () => Game.resolveMatch(goal, result.section));
+  } else {
+    await Game.resolveMatch(goal, result.section);
+  }
 
   totalScore += goal.points;
   collectedGoals.push(goal);
