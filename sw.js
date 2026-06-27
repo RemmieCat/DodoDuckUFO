@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abducktion-v3';
+const CACHE_NAME = 'abducktion-v4';
 const BASE = '/DodoDuckUFO';
 
 const ASSETS = [
