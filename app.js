@@ -4,8 +4,10 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── Storage keys ──────────────────────────────────────────
-const HIGH_SCORES_KEY = "abducktion_highscores";
-const HIGH_SCORES_MAX = 15;
+const HIGH_SCORES_KEY  = "abducktion_highscores_v2"; // v2: grouped by settings
+const GLOBAL_STATS_KEY = "abducktion_stats";
+const HS_PER_GROUP     = 10;
+const LAST_NAME_KEY    = "abducktion_lastplayer";
 
 // ── Action deck definitions ───────────────────────────────
 const DECK_CONFIGS = {
@@ -89,6 +91,8 @@ document.getElementById("info-modal").addEventListener("click", e => {
 document.getElementById("btn-delete-data").addEventListener("click", () => {
   if (confirm("Delete all saved scores and settings?")) {
     localStorage.removeItem(HIGH_SCORES_KEY);
+    localStorage.removeItem(GLOBAL_STATS_KEY);
+    localStorage.removeItem(LAST_NAME_KEY);
     localStorage.removeItem("abducktion_settings");
     location.reload();
   }
@@ -222,7 +226,6 @@ function renderActiveGoals() {
     const backImg = document.createElement("img");
     backImg.src = "images/transparent/ufo.png";
     backImg.alt = "";
-    backImg.style.cssText = "width:70%;opacity:0.55;pointer-events:none;";
     back.appendChild(backImg);
     inner.appendChild(back);
 
@@ -352,6 +355,32 @@ function showAwardToast(matchedGoal, awardedActions) {
   }, 4000);
 }
 
+// ── Game timer ────────────────────────────────────────────
+let _gameStartTime = null;
+let _gameDurationMs = 0;
+
+function startTimer() {
+  _gameStartTime = Date.now();
+}
+
+function stopTimer() {
+  if (_gameStartTime) {
+    _gameDurationMs = Date.now() - _gameStartTime;
+    _gameStartTime = null;
+  }
+}
+
+function formatDuration(ms) {
+  const totalSec = Math.round(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+document.addEventListener("game:board-filled", () => {
+  if (!_gameStartTime) startTimer();
+});
+
 // ── Rank titles ───────────────────────────────────────────
 const RANK_TITLES = [
   { min: 129, title: "CEO" },
@@ -366,43 +395,101 @@ function getRankTitle(pts) {
   return RANK_TITLES.find(r => pts >= r.min)?.title ?? "Intern";
 }
 
+// ── Settings fingerprint (groups high scores) ─────────────
+function settingsKey(s) {
+  s = s ?? window.settings ?? {};
+  return [
+    s.goalCount      ?? 3,
+    s.goalDeckSize   ?? 15,
+    s.startingCards  ?? 5,
+    s.deck           ?? "Original",
+    s.removeHighGoals ? 1 : 0,
+  ].join("|");
+}
+
+function settingsLabel(s) {
+  s = s ?? window.settings ?? {};
+  const parts = [
+    `${s.goalCount ?? 3} goals`,
+    `deck ${s.goalDeckSize ?? 15}`,
+    `${s.startingCards ?? 5} start`,
+    s.deck ?? "Original",
+  ];
+  if (s.removeHighGoals) parts.push("easy");
+  return parts.join(" · ");
+}
+
+// ── Global stats ──────────────────────────────────────────
+function loadStats() {
+  try {
+    return JSON.parse(localStorage.getItem(GLOBAL_STATS_KEY)) ?? { played: 0, totalScore: 0, totalPctPts: 0, totalPctCards: 0 };
+  } catch (_) {
+    return { played: 0, totalScore: 0, totalPctPts: 0, totalPctCards: 0 };
+  }
+}
+
+function saveStats(st) { localStorage.setItem(GLOBAL_STATS_KEY, JSON.stringify(st)); }
+
+function recordGameStats(pts, pctPts, pctCards) {
+  const st = loadStats();
+  st.played      = (st.played      ?? 0) + 1;
+  st.totalScore  = (st.totalScore  ?? 0) + pts;
+  st.totalPctPts = (st.totalPctPts ?? 0) + pctPts;
+  st.totalPctCards = (st.totalPctCards ?? 0) + pctCards;
+  saveStats(st);
+}
+
 // ── High scores ───────────────────────────────────────────
+// Storage shape: { [settingsKey]: entry[] }
 
-function loadHighScores() {
-  try { return JSON.parse(localStorage.getItem(HIGH_SCORES_KEY)) ?? []; }
-  catch (_) { return []; }
+function loadAllScores() {
+  try { return JSON.parse(localStorage.getItem(HIGH_SCORES_KEY)) ?? {}; }
+  catch (_) { return {}; }
 }
 
-function saveHighScores(scores) {
-  localStorage.setItem(HIGH_SCORES_KEY, JSON.stringify(scores));
+function saveAllScores(all) { localStorage.setItem(HIGH_SCORES_KEY, JSON.stringify(all)); }
+
+function addHighScore(entry) {
+  const key = settingsKey(entry._settings);
+  const all = loadAllScores();
+  const group = all[key] ?? [];
+  group.push(entry);
+  group.sort((a, b) => b.pts - a.pts || a.durationMs - b.durationMs);
+  group.splice(HS_PER_GROUP);
+  all[key] = group;
+  saveAllScores(all);
+  const idx = group.findIndex(s => s._id === entry._id);
+  return { group, idx, bumpedEntry: idx === -1 ? entry : null };
 }
 
-function addHighScore(pts) {
-  const now = new Date();
-  const entry = {
-    pts,
-    date: now.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" }),
-    time: now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
-    _id: now.getTime(),
-  };
-  const scores = loadHighScores();
-  scores.push(entry);
-  scores.sort((a, b) => b.pts - a.pts);
-  scores.splice(HIGH_SCORES_MAX);
-  saveHighScores(scores);
-  // Return scores and the index of this entry (-1 if bumped out of top 15)
-  const idx = scores.findIndex(s => s._id === entry._id);
-  return { scores, entry, idx };
+function isNewRecord(pts, durationMs) {
+  const key = settingsKey();
+  const all = loadAllScores();
+  const group = all[key] ?? [];
+  if (group.length === 0) return true;
+  if (pts > group[0].pts) return true;
+  if (pts === group[0].pts && durationMs < group[0].durationMs) return true;
+  return false;
 }
 
-function renderHighScores(scores, entry, currentIdx) {
+function renderHighScores(group, currentIdx, bumpedEntry) {
+  // Header: show which settings group this is
+  document.getElementById("hs-group-label").textContent = settingsLabel();
+
   const tbody = document.getElementById("high-scores-body");
   tbody.innerHTML = "";
 
-  const top5 = scores.slice(0, 5);
+  if (!group.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="7" style="color:var(--muted);font-style:italic;padding:8px 0">No scores yet</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  const top = group.slice(0, 5);
   let showedCurrent = false;
 
-  top5.forEach((s, i) => {
+  top.forEach((s, i) => {
     const isCurrent = (i === currentIdx);
     if (isCurrent) showedCurrent = true;
     appendScoreRow(tbody, i + 1, s, isCurrent);
@@ -411,36 +498,115 @@ function renderHighScores(scores, entry, currentIdx) {
   if (!showedCurrent) {
     const sep = document.createElement("tr");
     sep.className = "hs-divider";
-    sep.innerHTML = `<td colspan="4"></td>`;
+    sep.innerHTML = `<td colspan="7"></td>`;
     tbody.appendChild(sep);
-    // currentIdx >= 5 means it's in saved range but outside top 5
-    // currentIdx === -1 means it was bumped out entirely (score too low)
-    const rank = currentIdx >= 0 ? currentIdx + 1 : null;
-    appendScoreRow(tbody, rank, entry, true);
+    if (currentIdx !== -1) {
+      appendScoreRow(tbody, currentIdx + 1, group[currentIdx], true);
+    } else if (bumpedEntry) {
+      appendScoreRow(tbody, null, bumpedEntry, true);
+    }
   }
+
+  // Global stats footer
+  const stats = loadStats();
+  const n = stats.played ?? 0;
+  const avgScore    = n > 0 ? Math.round(stats.totalScore    / n) : 0;
+  const avgPctPts   = n > 0 ? Math.round(stats.totalPctPts   / n) : 0;
+  const avgPctCards = n > 0 ? Math.round(stats.totalPctCards / n) : 0;
+  document.getElementById("hs-stats-footer").textContent =
+    `${n} games · avg ${avgScore} pts · avg ${avgPctPts}% of pts · avg ${avgPctCards}% of goals`;
 }
 
 function appendScoreRow(tbody, rank, s, isCurrent) {
   const tr = document.createElement("tr");
   if (isCurrent) tr.className = "hs-current";
+  const pctPts  = s.pctPts  != null ? s.pctPts  + "%" : "—";
+  const pctCards= s.pctCards != null ? s.pctCards + "%" : "—";
+  const dur     = s.durationMs != null ? formatDuration(s.durationMs) : "—";
   tr.innerHTML = `
-    <td>${rank === null ? "16+" : rank}</td>
-    <td>${s.pts} pts</td>
-    <td>${s.date}</td>
-    <td>${s.time}</td>
+    <td>${rank === null ? "—" : rank}</td>
+    <td>${s.name || "—"}</td>
+    <td>${s.pts}</td>
+    <td>${pctPts}</td>
+    <td>${pctCards}</td>
+    <td>${dur}</td>
+    <td>${s.date}<br><span style="font-size:10px;color:var(--muted)">${s.time}</span></td>
   `;
   tbody.appendChild(tr);
 }
 
 // ── End game ──────────────────────────────────────────────
-function endGame() {
-  document.getElementById("results-score").textContent = totalScore + " pts";
-  document.getElementById("results-goals").textContent = collectedGoals.length;
+async function endGame() {
+  stopTimer();
+
+  const possiblePts = ACTIVE_GOAL_POOL.reduce((s, g) => s + g.points, 0);
+  const pctPts      = possiblePts > 0 ? Math.round(totalScore / possiblePts * 100) : 0;
+  const pctCards    = ACTIVE_GOAL_POOL.length > 0
+    ? Math.round(collectedGoals.length / ACTIVE_GOAL_POOL.length * 100) : 0;
+
+  recordGameStats(totalScore, pctPts, pctCards);
+
+  const now = new Date();
+  const pendingEntry = {
+    pts:        totalScore,
+    name:       "",
+    durationMs: _gameDurationMs,
+    pctPts,
+    pctCards,
+    date: now.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" }),
+    time: now.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }),
+    _id:  now.getTime(),
+    _settings: { ...window.settings },
+  };
+
+  // Fill results page
+  document.getElementById("results-score").textContent   = totalScore + " pts";
+  document.getElementById("results-goals").textContent   = collectedGoals.length;
   document.getElementById("results-actions").textContent = actionsUsed;
-  document.getElementById("results-rank").textContent = getRankTitle(totalScore);
-  const { scores, entry, idx } = addHighScore(totalScore);
-  renderHighScores(scores, entry, idx);
+  document.getElementById("results-duration").textContent = formatDuration(_gameDurationMs);
+  document.getElementById("results-pct-pts").textContent  = pctPts + "%";
+  document.getElementById("results-pct-cards").textContent = pctCards + "%";
+  document.getElementById("results-rank").textContent    = getRankTitle(totalScore);
+
+  if (isNewRecord(totalScore, _gameDurationMs)) {
+    const name = await showNewRecordPage();
+    pendingEntry.name = name;
+  } else {
+    pendingEntry.name = localStorage.getItem(LAST_NAME_KEY) || "";
+  }
+
+  const { group, idx, bumpedEntry } = addHighScore(pendingEntry);
+  renderHighScores(group, idx, bumpedEntry);
   showPage("page-results");
+}
+
+// ── New Record interstitial ───────────────────────────────
+function showNewRecordPage() {
+  return new Promise(resolve => {
+    const lastName = localStorage.getItem(LAST_NAME_KEY) || "";
+    const input = document.getElementById("new-record-name");
+    input.value = lastName;
+    showPage("page-new-record");
+    // Focus after transition paint
+    requestAnimationFrame(() => requestAnimationFrame(() => input.focus()));
+
+    function submit() {
+      const name = input.value.trim();
+      if (name) localStorage.setItem(LAST_NAME_KEY, name);
+      cleanup();
+      resolve(name);
+    }
+
+    function onKey(e) { if (e.key === "Enter") submit(); }
+
+    function cleanup() {
+      document.getElementById("btn-new-record-submit").removeEventListener("click", submit);
+      input.removeEventListener("keydown", onKey);
+    }
+
+    document.getElementById("btn-new-record-submit").addEventListener("click", submit);
+    input.addEventListener("keydown", onKey);
+  });
 }
 
 // ── Progress modal ────────────────────────────────────────

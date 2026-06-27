@@ -1,1020 +1,510 @@
-
 /* ── Goal card modal ─────────────────────────────────────
-
    The backdrop covers the entire viewport and blocks all
-
    interaction beneath it. The card sits centered on top.   */
 
- 
-
 .goal-modal-backdrop {
-
   display: none;
-
   position: fixed;
-
   inset: 0;
-
   z-index: 100;
-
   background: rgba(15, 23, 42, 0.55);
-
   backdrop-filter: blur(2px);
-
   align-items: center;
-
   justify-content: center;
-
   padding: 24px;
-
 }
-
- 
 
 .goal-modal-backdrop.open {
-
   display: flex;
-
 }
-
- 
 
 .goal-modal-card {
-
   position: relative;
-
   background: #fff;
-
   border-radius: 18px;
-
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
-
   padding: 28px 28px 24px;
-
   width: min(340px, 100%);
-
   display: flex;
-
   flex-direction: column;
-
   gap: 12px;
-
   animation: modal-in 0.18s ease;
-
 }
-
- 
 
 @keyframes modal-in {
-
   from { opacity: 0; transform: scale(0.93); }
-
   to   { opacity: 1; transform: scale(1);    }
-
 }
-
- 
 
 .goal-modal-close {
-
   position: absolute;
-
   top: 12px;
-
   right: 14px;
-
   width: 32px;
-
   height: 32px;
-
   border: none;
-
   border-radius: 50%;
-
   background: #f1f5f9;
-
   color: #475569;
-
   font-size: 15px;
-
   line-height: 1;
-
   cursor: pointer;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   transition: background 0.12s;
-
 }
-
 .goal-modal-close:hover { background: #e2e8f0; }
 
- 
-
 .goal-modal-name {
-
   font-size: 1.25rem;
-
   font-weight: 800;
-
   color: var(--text);
-
   padding-right: 32px; /* clear the X button */
-
 }
-
- 
 
 .goal-modal-pts {
-
   font-size: 0.85rem;
-
   font-weight: 600;
-
   color: var(--accent);
-
   margin-top: -8px;
-
 }
-
- 
 
 /* Pattern grid — aspect-ratio set inline per goal so cells are always square */
-
 .goal-modal-pattern {
-
   display: grid;
-
   gap: 6px;
-
   width: min(180px, 60%);
-
   align-self: center;
-
   /* aspect-ratio set inline; height follows automatically */
-
 }
-
- 
 
 .goal-modal-pattern .pattern-cell {
-
   aspect-ratio: 1;
-
   border-radius: 4px;
-
   /* color comes from style.css data-letter rules */
-
 }
-
 .goal-modal-pattern .pattern-cell.empty {
-
   background: transparent;
-
   border: 1.5px dashed #cbd5e1;
-
 }
-
- 
 
 .goal-modal-desc {
-
   font-size: 0.9rem;
-
   line-height: 1.55;
-
   color: var(--text);
-
 }
-
- 
 
 /* ── Progress modal ──────────────────────────────────────
-
    Wider card with two-column body: goal list + visual     */
 
- 
-
 .progress-modal-card {
-
   position: relative;
-
   background: #fff;
-
   border-radius: 18px;
-
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
-
   padding: 28px 28px 24px;
-
   width: min(560px, 96vw);
-
   display: flex;
-
   flex-direction: column;
-
   gap: 16px;
-
   animation: modal-in 0.18s ease;
-
 }
-
- 
 
 .progress-modal-score {
-
   font-size: 2rem;
-
   font-weight: 900;
-
   color: var(--accent);
-
   text-align: center;
-
   padding-right: 32px;
-
 }
-
- 
 
 .progress-modal-body {
-
   display: grid;
-
   grid-template-columns: 1fr 1fr;
-
   gap: 20px;
-
   min-height: 200px;
-
 }
-
- 
 
 .progress-goal-list {
-
   margin: 0;
-
   padding: 0 0 0 4px;
-
   list-style: none;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 4px;
-
   overflow-y: auto;
-
   max-height: 280px;
-
 }
-
- 
 
 .progress-goal-empty {
-
   font-size: 0.85rem;
-
   color: var(--muted);
-
   font-style: italic;
-
   padding: 8px 0;
-
 }
-
- 
 
 .progress-goal-item {
-
   display: flex;
-
   align-items: center;
-
   gap: 10px;
-
   padding: 8px 10px;
-
   border-radius: 8px;
-
   cursor: pointer;
-
   font-size: 0.9rem;
-
   font-weight: 600;
-
   color: var(--text);
-
   transition: background 0.12s;
-
 }
-
 .progress-goal-item:hover { background: #f1f5f9; }
-
 .progress-goal-item.active { background: #f5f3ff; outline: 2px solid var(--accent); }
 
- 
-
 .progress-goal-pts {
-
   font-size: 0.8rem;
-
   font-weight: 800;
-
   color: #fff;
-
   background: var(--accent);
-
   border-radius: 999px;
-
   padding: 2px 7px;
-
   flex-shrink: 0;
-
 }
-
- 
 
 .progress-visual {
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   background: #f8fafc;
-
   border: 1px dashed var(--border);
-
   border-radius: 12px;
-
   padding: 12px;
-
   min-height: 160px;
-
 }
-
- 
 
 .progress-ufo-img {
-
   width: 100%;
-
   max-width: 180px;
-
   object-fit: contain;
-
   filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
-
 }
-
- 
 
 /* Pattern preview inside progress modal —
-
    override the goal-card-pattern-frame sizing so it fills the visual panel */
-
 .progress-pattern-frame.goal-card-pattern-frame {
-
   width: 80%;
-
   height: 80%;
-
   flex: none;
-
 }
-
- 
 
 @media (max-width: 480px) {
-
   .progress-modal-body {
-
     grid-template-columns: 1fr;
-
   }
-
   .progress-visual { min-height: 120px; }
-
 }
-
- 
 
 /* ── Settings modal ──────────────────────────────────────── */
 
- 
-
 .settings-modal-card {
-
   position: relative;
-
   background: #fff;
-
   border-radius: 18px;
-
   box-shadow: 0 24px 60px rgba(0,0,0,0.28);
-
   padding: 28px 28px 24px;
-
   width: min(420px, 96vw);
-
   display: flex;
-
   flex-direction: column;
-
   gap: 20px;
-
   animation: modal-in 0.18s ease;
-
   max-height: 90dvh;
-
   overflow-y: auto;
-
 }
-
- 
 
 .settings-title {
-
   font-size: 1.25rem;
-
   font-weight: 800;
-
   margin: 0;
-
   padding-right: 32px;
-
   color: var(--text);
-
 }
-
- 
 
 .settings-section {
-
   display: flex;
-
   flex-direction: column;
-
   gap: 12px;
-
 }
-
- 
 
 .settings-section-label {
-
   font-size: 11px;
-
   font-weight: 700;
-
   text-transform: uppercase;
-
   letter-spacing: 0.07em;
-
   color: var(--muted);
-
   border-bottom: 1px solid var(--border);
-
   padding-bottom: 4px;
-
 }
-
- 
 
 .settings-field {
-
   display: flex;
-
   flex-direction: column;
-
   gap: 6px;
-
 }
-
- 
 
 .settings-field-label {
-
   font-size: 0.875rem;
-
   font-weight: 600;
-
   color: var(--text);
-
 }
-
- 
 
 .settings-radio-group {
-
   display: flex;
-
   gap: 6px;
-
   flex-wrap: wrap;
-
 }
-
- 
 
 .settings-radio {
-
   padding: 5px 14px;
-
   border: 2px solid var(--border);
-
   border-radius: 999px;
-
   background: #f8fafc;
-
   font-size: 0.85rem;
-
   font-weight: 600;
-
   color: var(--text);
-
   cursor: pointer;
-
   transition: border-color 0.12s, background 0.12s, color 0.12s;
-
 }
-
 .settings-radio:hover { border-color: #a78bfa; background: #f5f3ff; }
-
 .settings-radio.active {
-
   border-color: var(--accent);
-
   background: var(--accent);
-
   color: #fff;
-
 }
-
- 
 
 .settings-field-check {
-
   flex-direction: row;
-
   align-items: flex-start;
-
   justify-content: space-between;
-
   gap: 12px;
-
 }
-
- 
 
 .settings-check-label {
-
   font-size: 0.875rem;
-
   font-weight: 600;
-
   color: var(--text);
-
   cursor: pointer;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 2px;
-
 }
-
- 
 
 .settings-check-hint {
-
   font-size: 0.78rem;
-
   font-weight: 400;
-
   color: var(--muted);
-
 }
-
- 
 
 .settings-check {
-
   width: 18px;
-
   height: 18px;
-
   flex-shrink: 0;
-
   cursor: pointer;
-
   margin-top: 2px;
-
   accent-color: var(--accent);
-
 }
-
- 
 
 .settings-actions {
-
   display: flex;
-
   gap: 10px;
-
   justify-content: flex-end;
-
   padding-top: 4px;
-
 }
-
- 
 
 .settings-btn-cancel,
-
 .settings-btn-update {
-
   padding: 9px 22px;
-
   border-radius: 10px;
-
   font-size: 0.9rem;
-
   font-weight: 700;
-
   cursor: pointer;
-
   border: 2px solid var(--border);
-
   transition: background 0.12s, border-color 0.12s;
-
 }
-
- 
 
 .settings-btn-cancel {
-
   background: #f1f5f9;
-
   color: var(--text);
-
 }
-
 .settings-btn-cancel:hover { background: #e2e8f0; }
 
- 
-
 .settings-btn-update {
-
   background: var(--accent);
-
   color: #fff;
-
   border-color: var(--accent);
-
 }
-
 .settings-btn-update:hover { background: #6d28d9; border-color: #6d28d9; }
-
- 
 
 /* ── Instructions modal ──────────────────────────────── */
 
- 
-
 .info-modal-card {
-
   position: relative;
-
   background: #fff;
-
   border-radius: 18px;
-
   box-shadow: 0 24px 60px rgba(0,0,0,0.28);
-
   padding: 28px 28px 24px;
-
   width: min(560px, 96vw);
-
   max-height: 85dvh;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 0;
-
   animation: modal-in 0.18s ease;
-
   overflow: hidden;
-
 }
-
- 
 
 .info-modal-title {
-
   font-size: 1.25rem;
-
   font-weight: 800;
-
   margin: 0 0 16px;
-
   padding-right: 32px;
-
   color: var(--text);
-
   flex-shrink: 0;
-
 }
-
- 
 
 .info-modal-body {
-
   overflow-y: auto;
-
   display: flex;
-
   flex-direction: column;
-
   gap: 20px;
-
   padding-right: 4px;
-
 }
-
- 
 
 .info-section h3 {
-
   font-size: 0.75rem;
-
   font-weight: 700;
-
   text-transform: uppercase;
-
   letter-spacing: 0.07em;
-
   color: var(--muted);
-
   border-bottom: 1px solid var(--border);
-
   padding-bottom: 4px;
-
   margin: 0 0 8px;
-
 }
-
- 
 
 .info-section p {
-
   font-size: 0.875rem;
-
   line-height: 1.6;
-
   color: var(--text);
-
   margin: 0 0 6px;
-
 }
-
 .info-section p:last-child { margin-bottom: 0; }
 
- 
-
 .info-actions {
-
   display: grid;
-
   grid-template-columns: auto 1fr;
-
   gap: 4px 12px;
-
   font-size: 0.85rem;
-
   margin: 0;
-
 }
-
 .info-actions dt {
-
   font-weight: 700;
-
   color: var(--accent);
-
   white-space: nowrap;
-
   padding: 2px 0;
-
 }
-
 .info-actions dd {
-
   margin: 0;
-
   color: var(--text);
-
   line-height: 1.5;
-
   padding: 2px 0;
-
 }
-
- 
 
 .info-ranks {
-
   width: 100%;
-
   border-collapse: collapse;
-
   font-size: 0.85rem;
-
   margin-top: 8px;
-
 }
-
 .info-ranks td {
-
   padding: 4px 12px 4px 0;
-
   color: var(--text);
-
   border-top: 1px solid var(--border);
-
 }
-
 .info-ranks td:first-child {
-
   font-weight: 700;
-
   color: var(--muted);
-
   white-space: nowrap;
-
 }
-
- 
 
 /* ── Duck picker ─────────────────────────────────────────── */
 
- 
-
 .settings-radio-disabled {
-
   opacity: 0.38;
-
   cursor: not-allowed;
-
   pointer-events: none;
-
 }
-
- 
 
 .duck-picker-grid {
-
   display: grid;
-
   grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-
   gap: 6px;
-
   max-height: 220px;
-
   overflow-y: auto;
-
   padding: 4px 2px;
-
   border: 1px solid var(--border);
-
   border-radius: 10px;
-
   background: #f8fafc;
-
 }
-
- 
 
 .duck-picker-thumb {
-
   position: relative;
-
   aspect-ratio: 1;
-
   border: 2px solid var(--border);
-
   border-radius: 8px;
-
   background: #fff;
-
   cursor: pointer;
-
   padding: 4px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   transition: border-color 0.12s, background 0.12s;
-
 }
-
 .duck-picker-thumb:hover {
-
   border-color: #a78bfa;
-
   background: #f5f3ff;
-
 }
-
 .duck-picker-thumb.duck-picker-selected {
-
   border-color: var(--accent);
-
   background: #f5f3ff;
-
 }
-
 .duck-picker-thumb img {
-
   width: 100%;
-
   height: 100%;
-
   object-fit: contain;
-
   pointer-events: none;
-
   display: block;
-
 }
-
- 
 
 .duck-slot-dot {
-
   position: absolute;
-
   bottom: 2px;
-
   right: 2px;
-
   width: 10px;
-
   height: 10px;
-
   border-radius: 50%;
-
   border: 1.5px solid #fff;
-
   pointer-events: none;
-
 }
-
- 
 
 .duck-picker-random-btn {
-
   align-self: flex-start;
-
   margin-top: 2px;
-
 }
 
- 
-
 /* Compact slightly on small phones */
-
 @media (max-width: 380px) {
-
   .goal-modal-card {
-
     padding: 20px 18px;
-
     gap: 10px;
-
   }
-
   .goal-modal-name { font-size: 1.1rem; }
-
   .goal-modal-pattern {
-
     width: min(140px, 55%);
-
   }
-
 }

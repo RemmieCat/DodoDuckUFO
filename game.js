@@ -81,13 +81,13 @@ const CARTOON_IMAGES = {
 };
 
 function assignColorImages() {
-  const chosen = window.settings?.duckSet;
-  if (Array.isArray(chosen) && chosen.length === 4) {
-    ITEM_COLORS.forEach((color, i) => { colorImages[color] = chosen[i]; });
-  } else {
-    const shuffled = [...DUCK_IMAGES].sort(() => Math.random() - 0.5);
-    ITEM_COLORS.forEach((color, i) => { colorImages[color] = shuffled[i]; });
-  }
+  const chosen = Array.isArray(window.settings?.duckSet) ? window.settings.duckSet : [];
+  const pool = [...DUCK_IMAGES].sort(() => Math.random() - 0.5)
+    .filter(src => !chosen.includes(src));
+  let poolIdx = 0;
+  ITEM_COLORS.forEach((color, i) => {
+    colorImages[color] = chosen[i] ?? pool[poolIdx++];
+  });
 }
 
 // ── Item color helpers ────────────────────────────────────
